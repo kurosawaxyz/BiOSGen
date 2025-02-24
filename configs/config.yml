@@ -6,7 +6,7 @@ data_csv_path: "/Users/hoangthuyduongvu/Documents/icm/tumor-augmentation/i2iTran
 
 train: 
   batch_size: 10
-  num_epochs: 50
+  num_epochs: 25
   save_epoch_freq: 10
   model: 
     generator: 

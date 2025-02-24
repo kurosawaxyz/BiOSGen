@@ -33,3 +33,7 @@ def preprocess_image(image_path, device):
     img = torch.tensor(img).permute(2, 0, 1).unsqueeze(0).float().to(device)
     return img
 
+def preprocess_array(image_array, device):
+    img = torch.tensor(image_array).permute(2, 0, 1).unsqueeze(0).float().to(device)
+    return img
+
