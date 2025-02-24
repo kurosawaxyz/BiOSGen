@@ -1,36 +1,6 @@
-# Tumor augmentation
-
-## Task 1 - Tumor cell staining + Missing tumor cell part generation
-### Architecture
-![](assets/losses.png)
-### Consistency objectives
-#### [ ] Neighborhood consistency
-#### [ ] Global consistency
-#### [ ] Local consistency
-## Task 2 - Refine + Resolution augmentation 
-
-
-
-
-## Keys
-- The backbone of VM is a GAN-based generator G, specifically a CUT model, that consists of 2 sequential components, an encoder G_enc and a decoder G_dec
-
-- The VM is trained under the supervision of 3 levels of consistency objectives: local, neighborhood and global consistency
-
-
 # Create conda virtual environment
 ```bash
 conda env create -f environment.yml
-```
-
-# Install test data (HE and NKX3)
-
-```bash
-# At the lab
-python -m bin.main --data_dir /storage/apps/hoangthuy.vu/tumor-augmentation-main/data --data_type_src HE --data_type_dst NKX3 --csv_summary_path /storage/apps/hoangthuy.vu/tumor-augmentation-main/data/HE_NKX3.csv
-
-# At home
-python -m bin.main --data_dir /Users/vuhoangthuyduong/Documents/icm/tumor-augmentation/data --data_type_src HE --data_type_dst NKX3 --csv_summary_path /Users/vuhoangthuyduong/Documents/icm/tumor-augmentation/data/HE_NKX3.csv
 ```
 
 # Test model with training_demo
