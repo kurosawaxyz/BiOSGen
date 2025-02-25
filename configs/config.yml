@@ -60,6 +60,8 @@ train:
         lr_G: 0.0002
         lr_D: 0.0002
         lr_I: 0.0002
+        lr_policy: 'linear'
+        lr_decay_iters: 50
 
       params:
         beta1: 0.5
@@ -68,3 +70,10 @@ train:
 
     is_image_match: True
     patch_batch_size: 256
+    tile_batch_size: 256
+    n_epochs_decay: 100
+    n_epochs: 200
+    save: 
+      epoch_count: 10
+      continue_train: False
+      loss_logging_freq: 10

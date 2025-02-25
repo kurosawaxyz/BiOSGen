@@ -39,11 +39,11 @@ def get_scheduler(optimizer, args):
 
     Code snippet from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/i2iTranslation/models/networks.py
     """
-    lr_policy = args['train.params.optimizer.lr.lr_policy']
-    lr_decay_iters = args['train.params.optimizer.lr.lr_decay_iters']
-    n_epochs_decay = args['train.params.n_epochs_decay']
-    n_epochs = args['train.params.n_epochs']
-    epoch_count = args['train.params.save.epoch_count']
+    lr_policy = args.train.params.optimizer.lr.lr_policy
+    lr_decay_iters = args.train.params.optimizer.lr.lr_decay_iters
+    n_epochs_decay = args.train.params.n_epochs_decay
+    n_epochs = args.train.params.n_epochs
+    epoch_count = args.train.params.save.epoch_count
 
     if lr_policy == 'linear':
         def lambda_rule(epoch):
