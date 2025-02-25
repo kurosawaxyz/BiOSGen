@@ -3,6 +3,7 @@ import yaml
 import pandas as pd
 import numpy as np
 from PIL import Image
+from typing import Dict, List
 
 class DotDict:
     """Recursively convert a nested dictionary into an object supporting dot notation."""
@@ -37,3 +38,6 @@ def preprocess_array(image_array, device):
     img = torch.tensor(image_array).permute(2, 0, 1).unsqueeze(0).float().to(device)
     return img
 
+def delete_tensor_gpu(tensor_dict: Dict):
+    for k, v in tensor_dict.items():
+        del v

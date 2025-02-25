@@ -77,6 +77,7 @@ def get_image_patches(
     
     # extract patches
     patches = []
+    coords = []
     for y in range(0, image_.shape[0], patch_size):
         for x in range(0, image_.shape[1], patch_size):
             tissue_patch_ = tissue_mask_[y:y + patch_size, x:x + patch_size]
@@ -84,6 +85,7 @@ def get_image_patches(
                 patches.append(
                     image_[y:y + patch_size, x:x + patch_size, :]
                 )
+                coords.append((y, x))
     
                 if is_visualize:
                     rect = matplotlib.patches.Rectangle((x, y), patch_size, patch_size,
@@ -93,4 +95,4 @@ def get_image_patches(
     if is_visualize:
         plt.show()
         
-    return patches
+    return patches, coords

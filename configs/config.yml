@@ -36,6 +36,8 @@ train:
   data: 
     input_nc: 3
     output_nc: 3
+    patch_size: 256
+    downsample: 4
   
   
   params: 
@@ -73,6 +75,11 @@ train:
     tile_batch_size: 256
     n_epochs_decay: 100
     n_epochs: 200
+    patch_norm: True
+    patch_clip: 0.05
+    patch_batch_size: 256
+
+
     save: 
       epoch_count: 10
       continue_train: False
