@@ -21,6 +21,10 @@ dependencies:
       - transformers
       - einops
       - pyvips
+      - git+https://github.com/openai/CLIP.git
+      - diffusers
+      - transformers
+      - accelerate
 
   - conda:
     - libvips
