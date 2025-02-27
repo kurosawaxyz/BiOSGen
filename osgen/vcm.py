@@ -27,10 +27,9 @@ class VisionLanguageProjector(nn.Module):
     
 def extract_style_emb(
         image_path: str, 
-        model: clip.models.ViT, 
-        preprocess: clip.transforms.Preprocess,
         show: bool = False
     ):
+    model, preprocess = load_clip()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     style_image = Image.open(image_path).convert("RGB")
     style_tensor = preprocess(style_image).unsqueeze(0).to(device)

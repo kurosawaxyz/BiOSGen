@@ -15,5 +15,6 @@ def load_md():
 
 def describe_img(image_path):
     img = Image.open(image_path)
+    model = load_md()
     enc_image = model.encode_image(img)
     print(model.query(enc_image, "Describe this image."))
