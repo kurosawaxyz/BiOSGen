@@ -2,6 +2,11 @@ import torch
 import torch.nn as nn
 import clip 
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style(style='darkgrid')
+from PIL import Image
+
 def load_clip():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, preprocess = clip.load("ViT-B/32", device=device)
@@ -20,7 +25,12 @@ class VisionLanguageProjector(nn.Module):
     def forward(self, x):
         return self.mlp(x)
     
-def extract_style_emb(image_path, model, preprocess):
+def extract_style_emb(
+        image_path: str, 
+        model: clip.models.ViT, 
+        preprocess: clip.transforms.Preprocess,
+        show: bool = False
+    ):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     style_image = Image.open(image_path).convert("RGB")
     style_tensor = preprocess(style_image).unsqueeze(0).to(device)
@@ -36,4 +46,10 @@ def extract_style_emb(image_path, model, preprocess):
     style_embedding = vl_projector(image_features)
 
     print("Transformed Style Embedding Shape:", style_embedding.shape)
+
+    if show:
+        plt.figure(figsize=(6, 6))
+        plt.imshow(style_embedding.cpu().detach().numpy(), cmap='viridis')
+        plt.axis('off')
+        plt.show()
     return style_embedding
