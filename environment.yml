@@ -25,6 +25,8 @@ dependencies:
       - diffusers
       - transformers
       - accelerate
+      - loralib
+      - peft
 
   - conda:
     - libvips
