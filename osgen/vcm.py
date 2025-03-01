@@ -7,11 +7,6 @@ import seaborn as sns
 sns.set_style(style='darkgrid')
 from PIL import Image
 
-def load_clip():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model, preprocess = clip.load("ViT-B/32", device=device)
-    return model, preprocess
-
 # Vision-Language Projector (MLP)
 class VisionLanguageProjector(nn.Module):
     def __init__(self, input_dim=512, output_dim=512):  # Matching CLIP text embedding dim
@@ -24,6 +19,12 @@ class VisionLanguageProjector(nn.Module):
 
     def forward(self, x):
         return self.mlp(x)
+
+# Utility function to load CLIP model
+def load_clip():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model, preprocess = clip.load("ViT-B/32", device=device)
+    return model, preprocess
     
 def extract_style_embedding(
         image_path: str, 
