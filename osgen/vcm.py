@@ -25,7 +25,7 @@ class VisionLanguageProjector(nn.Module):
     def forward(self, x):
         return self.mlp(x)
     
-def extract_style_emb(
+def extract_style_embedding(
         image_path: str, 
         show: bool = False
     ):
