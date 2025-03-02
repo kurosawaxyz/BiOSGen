@@ -4,8 +4,10 @@ from PIL import Image
 from transformers import AutoModelForCausalLM 
 
 # moondream
-def load_md():
-    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+def load_md(
+    device: str = "cuda"
+):
+    device = torch.device(device)
     model = AutoModelForCausalLM.from_pretrained(
         "vikhyatk/moondream2",
         revision="2025-01-09",
@@ -13,8 +15,11 @@ def load_md():
     ).to(device)
     return model
 
-def describe_img(image_path):
+def describe_img(
+    image_path: str,
+    device: str = "cuda"
+):
     img = Image.open(image_path)
-    model = load_md()
+    model = load_md(device)
     enc_image = model.encode_image(img)
-    print(model.query(enc_image, "Describe this image."))
+    print(model.query(enc_image, "Describe this image.\n"))
