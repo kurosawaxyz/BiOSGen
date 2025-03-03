@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style(style='darkgrid')
 
-from .network import CrossAttention
+from .network import CrossAttentionBlock
 
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod
@@ -117,3 +117,49 @@ class VAEncoder(AbstractVAE):
         
         return mu, logvar
         
+
+class ConditionedVAEncoder(AbstractVAE):
+    def __init__(
+        self, 
+        in_channels: int = 3,
+        latent_channels: int = 4,
+        in_channels_params: List[int] = [3, 96, 128, 192],
+        out_channels_params: List[int] = [96, 128, 192, 256],
+        kernel_params: List[int] = [3, 3, 3, 3],
+        stride_params: List[int] = [2, 1, 1, 1],  
+        padding_params: List[int] = [1, 1, 1, 1],  
+        pooling_layers: List[int] = [0,2],  
+        activation_function: str = "relu",
+        device: str = "cuda",
+        cond_dim: int = 256,
+        *args,
+        **kwargs
+    ):
+        super(ConditionedVAEncoder, self).__init__()
+        self.encoder = VAEncoder(
+            in_channels=in_channels,
+            latent_channels=latent_channels,
+            in_channels_params=in_channels_params,
+            out_channels_params=out_channels_params,
+            kernel_params=kernel_params,
+            stride_params=stride_params,
+            padding_params=padding_params,
+            pooling_layers=pooling_layers,
+            activation_function=activation_function,
+            device=device
+        )
+        self.conditioning = CrossAttentionBlock(latent_channels, cond_dim)
+        
+    def forward(self, x, condition_embedding):
+
+        # Get latent representation
+        mu, log_var = self.encoder(x)
+        
+        # Reparameterization trick
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        z = mu + eps * std
+        
+        # Apply conditioning
+        conditioned_z = self.conditioning(z, condition_embedding)
+        return conditioned_z

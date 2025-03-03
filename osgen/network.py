@@ -27,11 +27,18 @@ class AbstractAttention(nn.Module, ABC):
     def forward(self, x):
         pass
 
-class CrossAttentionABC(nn.Module):
-    def __init__(self, latent_dim=4, cond_dim=256, heads=8):
+class CrossAttentionBlock(nn.Module):
+    def __init__(
+        self, 
+        latent_dim: int = 4,
+        cond_dim: int = 256,
+        heads: int = 8,
+        *args,
+        **kwargs
+    ):
         super().__init__()
         self.heads = heads
-        self.scale = (latent_dim // heads) ** -0.5
+        self.scale = (latent_dim / heads) ** -0.5
         
         # For latent vector (z from VAE)
         self.to_q = nn.Linear(latent_dim, latent_dim)
@@ -70,16 +77,3 @@ class CrossAttentionABC(nn.Module):
         out = out.reshape(batch, h, w, c).permute(0, 3, 1, 2)
         
         return out
-    
-
-class CrossAttentionBlock(AbstractAttention):
-    def __init__(
-        self, 
-        latent_channels: int = 4,
-        cond_dim: int = 256,
-        heads: int = 8,
-        *args,
-        **kwargs
-    ):
-        super(CrossAttentionBlock, self).__init__()
-        
