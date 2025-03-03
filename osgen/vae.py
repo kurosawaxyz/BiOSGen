@@ -5,6 +5,9 @@ from typing import List
 from abc import ABC, abstractmethod
 
 import loralib as lora
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_style(style='darkgrid')
 
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod
@@ -12,13 +15,17 @@ class AbstractVAE(nn.Module, ABC):
         pass
 
 class VAEncoder(AbstractVAE):
+    """
+    Variational Autoencoder (VAE) Encoder, adjusted for LoRA, to be plugged into Unet model or Resnet model later
+    """
     def __init__(
         self, 
         in_channels: int = 3,
         latent_channels: int = 4,
+        in_channels_params: List[int] = [3, 96, 128, 192],
         out_channels_params: List[int] = [96, 128, 192,256],
         kernel_params: List[int] = [5, 3, 3, 3],
-        pooling_layers: List[int] = [2, 4],
+        pooling_layers: List[int] = [1, 3],
         activation_function: str = "relu",
         device: str = "cuda",
         *args,
@@ -35,6 +42,8 @@ class VAEncoder(AbstractVAE):
         self.device = device
 
         # Check compatibility of hyperparameters
+        if len(in_channels_params) != latent_channels:
+            raise ValueError("Number of input channels must be equal to number of latent channels")
         if len(out_channels_params) != latent_channels:
             raise ValueError("Number of output channels must be equal to number of latent channels")
         if len(kernel_params) != latent_channels:
@@ -46,7 +55,7 @@ class VAEncoder(AbstractVAE):
 
             # First layer: Conv2d
             modules.append(lora.Conv2d(
-                in_channels=in_channels, 
+                in_channels=in_channels_params[i], 
                 out_channels=out_channels_params[i], 
                 kernel_size=kernel_params[i], 
                 stride=2, padding=2)
@@ -59,7 +68,7 @@ class VAEncoder(AbstractVAE):
             else:
                 raise ValueError("Activation function not supported")
             # Pooling layer
-            if i in pooling_layers:
+            if i+1 in pooling_layers:
                 modules.append(nn.MaxPool2d(kernel_size=2, stride=2))
             # Batch normalization
             modules.append(nn.BatchNorm2d(out_channels_params[i]))
@@ -85,4 +94,5 @@ class VAEncoder(AbstractVAE):
             x = getattr(self, f"encoder_{i}")(x)
         mu = self.conv_mu(x)
         logvar = self.conv_logvar(x)
+
         return mu, logvar

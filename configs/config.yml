@@ -3,6 +3,7 @@ device: "cpu"
 VAEncoder:
   in_channels: 3
   latent_channels: 4
+  in_channels_params: [3, 96, 128, 192]
   out_channels_params: [96, 128, 192,256]
   kernel_params: [5, 3, 3, 3]
   pooling_layers: [2, 4]
