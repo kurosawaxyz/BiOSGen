@@ -1,4 +1,4 @@
-name: tumor-analysis
+name: BiOSGen
 channels:
   - conda-forge
   - defaults
