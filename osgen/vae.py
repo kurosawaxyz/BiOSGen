@@ -9,10 +9,22 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style(style='darkgrid')
 
+from .network import CrossAttention
+
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod
     def forward(self, x):
         pass
+
+    def reparameterization_trick(self, x):
+        """
+        Reparameterization trick to sample from latent space
+        """
+        mu, logvar = self.forward(x)
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + eps * std
+        return z
 
 class VAEncoder(AbstractVAE):
     """
@@ -95,12 +107,8 @@ class VAEncoder(AbstractVAE):
         )
 
     def forward(self, x):
-        # For debugging
-        print(f"Input: {x.shape}")
-        
         for i in range(self.latent_channels):
             x = getattr(self, f"encoder_{i}")(x)
-            print(f"After encoder_{i}: {x.shape}")
             
         mu = self.conv_mu(x)
         logvar = self.conv_logvar(x)
@@ -108,3 +116,4 @@ class VAEncoder(AbstractVAE):
         print(f"Mean shape: {mu.shape}, Log Variance shape: {logvar.shape}")
         
         return mu, logvar
+        

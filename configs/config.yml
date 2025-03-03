@@ -8,3 +8,7 @@ VAEncoder:
   kernel_params: [5, 3, 3, 3]
   pooling_layers: [2, 4]
   activation_function: "relu"
+
+Attention:
+  latent_channels: 4
+  
