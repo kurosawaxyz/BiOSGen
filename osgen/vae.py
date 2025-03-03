@@ -23,9 +23,11 @@ class VAEncoder(AbstractVAE):
         in_channels: int = 3,
         latent_channels: int = 4,
         in_channels_params: List[int] = [3, 96, 128, 192],
-        out_channels_params: List[int] = [96, 128, 192,256],
-        kernel_params: List[int] = [5, 3, 3, 3],
-        pooling_layers: List[int] = [1, 3],
+        out_channels_params: List[int] = [96, 128, 192, 256],
+        kernel_params: List[int] = [3, 3, 3, 3],
+        stride_params: List[int] = [2, 1, 1, 1],  
+        padding_params: List[int] = [1, 1, 1, 1],  
+        pooling_layers: List[int] = [0,2],  
         activation_function: str = "relu",
         device: str = "cuda",
         *args,
@@ -58,7 +60,8 @@ class VAEncoder(AbstractVAE):
                 in_channels=in_channels_params[i], 
                 out_channels=out_channels_params[i], 
                 kernel_size=kernel_params[i], 
-                stride=2, padding=2)
+                stride=stride_params[i], 
+                padding=padding_params[i])
             )
             # Activation function
             if self.activation_function == "relu":
@@ -68,7 +71,7 @@ class VAEncoder(AbstractVAE):
             else:
                 raise ValueError("Activation function not supported")
             # Pooling layer
-            if i+1 in pooling_layers:
+            if i in pooling_layers:
                 modules.append(nn.MaxPool2d(kernel_size=2, stride=2))
             # Batch normalization
             modules.append(nn.BatchNorm2d(out_channels_params[i]))
@@ -79,20 +82,29 @@ class VAEncoder(AbstractVAE):
         self.conv_mu = lora.Conv2d(
             in_channels=out_channels_params[-1], 
             out_channels=latent_channels, 
-            kernel_size=3, 
-            stride=1, padding=1
+            kernel_size=1, 
+            stride=1, 
+            padding=0  # Modified: No padding for 1x1 conv
         )
         self.conv_logvar = lora.Conv2d(
             in_channels=out_channels_params[-1], 
             out_channels=latent_channels, 
-            kernel_size=3, 
-            stride=1, padding=1
+            kernel_size=1, 
+            stride=1, 
+            padding=0  # Modified: No padding for 1x1 conv
         )
 
     def forward(self, x):
+        # For debugging
+        print(f"Input: {x.shape}")
+        
         for i in range(self.latent_channels):
             x = getattr(self, f"encoder_{i}")(x)
+            print(f"After encoder_{i}: {x.shape}")
+            
         mu = self.conv_mu(x)
         logvar = self.conv_logvar(x)
-
+        
+        print(f"Mean shape: {mu.shape}, Log Variance shape: {logvar.shape}")
+        
         return mu, logvar
