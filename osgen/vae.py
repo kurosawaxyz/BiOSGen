@@ -5,9 +5,6 @@ from typing import List
 from abc import ABC, abstractmethod
 
 import loralib as lora
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set_style(style='darkgrid')
 
 from .network import CrossAttentionBlock
 
@@ -16,15 +13,6 @@ class AbstractVAE(nn.Module, ABC):
     def forward(self, x):
         pass
 
-    def reparameterization_trick(self, x):
-        """
-        Reparameterization trick to sample from latent space
-        """
-        mu, logvar = self.forward(x)
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        z = mu + eps * std
-        return z
 
 class VAEncoder(AbstractVAE):
     """
@@ -37,7 +25,7 @@ class VAEncoder(AbstractVAE):
         in_channels_params: List[int] = [3, 96, 128, 192],
         out_channels_params: List[int] = [96, 128, 192, 256],
         kernel_params: List[int] = [3, 3, 3, 3],
-        stride_params: List[int] = [2, 1, 1, 1],  
+        stride_params: List[int] = [1, 1, 1, 1],    # Modified this to switch between 32, 16 and 8
         padding_params: List[int] = [1, 1, 1, 1],  
         pooling_layers: List[int] = [0,2],  
         activation_function: str = "relu",
@@ -116,8 +104,8 @@ class VAEncoder(AbstractVAE):
         print(f"Mean shape: {mu.shape}, Log Variance shape: {logvar.shape}")
         
         return mu, logvar
+       
         
-
 class ConditionedVAEncoder(AbstractVAE):
     def __init__(
         self, 
@@ -132,6 +120,7 @@ class ConditionedVAEncoder(AbstractVAE):
         activation_function: str = "relu",
         device: str = "cuda",
         cond_dim: int = 256,
+        heads: int = 8,
         *args,
         **kwargs
     ):
@@ -148,15 +137,12 @@ class ConditionedVAEncoder(AbstractVAE):
             activation_function=activation_function,
             device=device
         )
-        self.conditioning = CrossAttentionBlock(latent_channels, cond_dim)
+        self.conditioning = CrossAttentionBlock(latent_channels, cond_dim, heads)
         
     def forward(self, x, condition_embedding):
-
-        # Get latent representation
-        mu, log_var = self.encoder(x)
-        
-        # Reparameterization trick
-        std = torch.exp(0.5 * log_var)
+        # Apply reparameterization
+        mu, logvar = self.encoder(x)
+        std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         z = mu + eps * std
         

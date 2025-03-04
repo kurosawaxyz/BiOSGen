@@ -90,3 +90,17 @@ def get_image_patches(
         plt.show()
         
     return patches
+
+def resize_patch(image):
+    img = cv2.resize(image, (32, 32))
+    return img
+
+def normalize_patch(image):
+    norm_img = cv2.normalize(
+        image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX
+    )
+    return norm_img
+
+def convert_patch_to_tensor(patch: np.ndarray) -> torch.Tensor:
+    patch = torch.tensor(patch).permute(2, 0, 1).unsqueeze(0).float()
+    return patch

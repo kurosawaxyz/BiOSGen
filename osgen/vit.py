@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import clip 
-import lora
 
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -15,6 +14,7 @@ Idea inspired from MLP-Mixer: An all-MLP Architecture for Vision
 Paper: https://arxiv.org/abs/2105.01601 by Tolstikhin et al. (2021)
 """
 class VisionLanguageProjector(nn.Module):
+    # To do reimplement the VisionLanguageProjector with the MLP-Mixer architecture
     def __init__(
         self,
         input_dim: int = 512,
@@ -24,6 +24,17 @@ class VisionLanguageProjector(nn.Module):
         **kwargs
     ):
         super(VisionLanguageProjector, self).__init__()
+        self.device = device
+
+        self.mlp = nn.Sequential(
+            lora.Linear(input_dim, input_dim * 2),
+            nn.ReLU(),
+            lora.Linear(input_dim * 2, output_dim),
+        )
+
+    def forward(self, x):
+        x = self.mlp(x)
+        return x
 
 
 # Utils function
@@ -44,7 +55,8 @@ def load_clip(device: str = "cuda"):
 def extract_style_embedding(
         image_path: str,
         show: bool = False,
-        device: str = "cuda"
+        device: str = "cuda",
+        savefig: bool = False
 ):
     """
     Extract style embedding from an image using CLIP model combined with proposed Vision-Language Projector
@@ -68,6 +80,8 @@ def extract_style_embedding(
     # Normalize the image features (similar to text embeddings)
     image_features = image_features / image_features.norm(dim=-1, keepdim=True)
 
+    print("Image Features Shape:", image_features.shape)
+
 
     # Pass through Vision-Language Projector
     vl_projector = VisionLanguageProjector(input_dim=512, output_dim=256).to(device)
@@ -76,10 +90,17 @@ def extract_style_embedding(
     print("Transformed Style Embedding Shape:", style_embedding.shape)
 
     if show:
-        plt.figure(figsize=(6, 6))
-        plt.imshow(style_embedding.cpu().detach().numpy(), cmap='viridis')
-        plt.axis('off')
-        plt.savefig('assets/style_embedding.png')
+        _, ax = plt.subplots(2, 1, figsize=(12,2))
+        ax[0].imshow(image_features.cpu().detach().numpy(), cmap='viridis')
+        ax[0].axis('off')
+        ax[0].set_title('Before Projection')
+        ax[1].imshow(style_embedding.cpu().detach().numpy(), cmap='viridis')
+        ax[1].axis('off')
+        ax[1].set_title('After Projection')
+
+        if savefig:
+            plt.savefig('assets/style_embedding.png')
+
         plt.show()
     return style_embedding
         
