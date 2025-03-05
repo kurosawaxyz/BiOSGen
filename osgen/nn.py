@@ -146,7 +146,7 @@ class Downsample(nn.Module):
     def forward(self, x):
         return self.op(x)
     
-class ResBlock(TimestepBlock):
+class ResBlock(nn.Module):
     def __init__(
         self,
         emb_channels: int,
@@ -157,75 +157,129 @@ class ResBlock(TimestepBlock):
         up=False,
         down=False,
         use_scale_shift_norm=False,
+        device=None,
+        dtype=torch.float32,
         *args,
         **kwargs
     ):
         # Define parameters
         super().__init__()
+        
+        # Ensure valid channel values
+        self.in_channels = max(in_channels, 1)
+        self.out_channels = max(out_channels or in_channels, 1)
+        
         self.emb_channels = emb_channels
         self.dropout = dropout
-        self.in_channels = in_channels
         self.use_conv = use_conv
-        self.out_channels = out_channels or in_channels
-        # print(f"Out channels: {self.out_channels, out_channels}")
         self.updown = up or down
         self.use_scale_shift_norm = use_scale_shift_norm
+        
+        # Explicitly set device and dtype
+        self.device = device or torch.device('cpu')
+        self.dtype = dtype
 
         # Define layers
         # Layer 1
         self.in_layers = nn.Sequential(
-            nn.BatchNorm2d(self.in_channels),  
+            nn.BatchNorm2d(
+                self.in_channels, 
+                device=self.device, 
+                dtype=self.dtype
+            ),
             nn.SiLU(),
-            lora.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1)  
+            lora.Conv2d(
+                self.in_channels, 
+                self.out_channels, 
+                kernel_size=3, 
+                padding=1,
+                device=self.device,
+                dtype=self.dtype
+            )  
         )
 
         # Middle layers
         if up:
-            self.h_upd = Upsample(in_channels, use_conv, out_channels)
-            self.x_upd = Upsample(in_channels, use_conv, out_channels)
+            self.h_upd = Upsample(
+                in_channels, 
+                use_conv, 
+                out_channels, 
+                device=self.device, 
+                dtype=self.dtype
+            )
+            self.x_upd = Upsample(
+                in_channels, 
+                use_conv, 
+                out_channels, 
+                device=self.device, 
+                dtype=self.dtype
+            )
         elif down:
-            self.h_upd = Downsample(in_channels, use_conv, out_channels)
-            self.x_upd = Downsample(in_channels, use_conv, out_channels)
+            self.h_upd = Downsample(
+                in_channels, 
+                use_conv, 
+                out_channels, 
+                device=self.device, 
+                dtype=self.dtype
+            )
+            self.x_upd = Downsample(
+                in_channels, 
+                use_conv, 
+                out_channels, 
+                device=self.device, 
+                dtype=self.dtype
+            )
         else:
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
             nn.SiLU(),
-            lora.Linear(emb_channels, 2 * out_channels if use_scale_shift_norm else self.out_channels)
+            lora.Linear(
+                emb_channels, 
+                2 * self.out_channels if use_scale_shift_norm else self.out_channels,
+                device=self.device,
+                dtype=self.dtype
+            )
         )
 
         # Last layers
         self.out_layers = nn.Sequential(
-            nn.BatchNorm2d(out_channels), 
+            nn.BatchNorm2d(
+                self.out_channels, 
+                device=self.device, 
+                dtype=self.dtype
+            ), 
             nn.SiLU(),
             nn.Dropout(p=dropout),
-            lora.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+            lora.Conv2d(
+                self.out_channels, 
+                self.out_channels, 
+                kernel_size=3, 
+                padding=1,
+                device=self.device,
+                dtype=self.dtype
+            )
         )
 
-        # if self.out_channels == in_channels:
-        #     self.skip_connection = nn.Identity()
-        # elif use_conv:
-        #     self.skip_connection = lora.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        # else:
-        #     self.skip_connection = lora.Linear(in_channels, out_channels)  # Fix: Remove `kernel_size=1
+        # Skip connection
         if self.out_channels == self.in_channels:
             self.skip_connection = nn.Identity()
         else:
-            self.skip_connection = lora.Conv2d(self.in_channels, self.out_channels, kernel_size=1)  # Ensure correct mapping
-
-
+            self.skip_connection = lora.Conv2d(
+                self.in_channels, 
+                self.out_channels, 
+                kernel_size=1,
+                device=self.device,
+                dtype=self.dtype
+            )
 
     def forward(self, x, emb):
-        # print(f"Input shape: {x.shape}")  # Expecting [1, 4, 32, 32]
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             h = in_rest(x)
             h = self.h_upd(h)
             x = self.x_upd(x)
             h = in_conv(h)
-
-            # print(f"After in_layers: {self.in_layers(x).shape}")  # Expecting [1, 8, 32, 32]
-
         else:
             h = self.in_layers(x)
 
@@ -237,10 +291,9 @@ class ResBlock(TimestepBlock):
             h = out_norm(h) * (1 + scale[:, :, None, None]) + shift[:, :, None, None]
             h = out_rest(h)
         else:
-            h = h + emb_out[:, :, None, None]  # **Fixed dimension mismatch**
+            h = h + emb_out[:, :, None, None]
             h = self.out_layers(h)
 
         res = self.skip_connection(x) + h
-        # print(f"After skip_connection: {self.skip_connection(x).shape}")  # Expecting [1, 8, 32, 32]
 
         return res

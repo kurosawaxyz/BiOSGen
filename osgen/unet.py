@@ -34,6 +34,7 @@ class UNetModel(nn.Module):
         self.use_scale_shift_norm = use_scale_shift_norm
         self.resblock_updown = resblock_updown
         self.num_classes = num_classes
+        self.dtype = torch.float32  # Explicitly set dtype
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
@@ -42,18 +43,20 @@ class UNetModel(nn.Module):
             lora.Linear(time_embed_dim, time_embed_dim),
         )
 
-        if not self.num_classes:
+        # Fix for label embedding
+        if num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+        else:
+            self.label_emb = None
         
         ch = input_ch = int(channel_mult[0] * model_channels)
         
         # Input block
-        self.input_blocks = nn.ModuleList(
-            [
-                TimestepEmbedSequential(
-                    lora.Conv2d(in_channels, ch, kernel_size=3, padding=1)
-                )
-            ]
+        self.input_blocks = nn.ModuleList()
+        self.input_blocks.append(
+            nn.ModuleList([
+                lora.Conv2d(in_channels, ch, kernel_size=3, padding=1)
+            ])
         )
         self._feature_size = ch
         input_block_chans = [ch]
@@ -61,15 +64,15 @@ class UNetModel(nn.Module):
 
         for level, mult in enumerate(channel_mult):
             for _ in range(num_res_blocks):
-                layers = [
+                layers = nn.ModuleList([
                     ResBlock(
-                        ch,
-                        time_embed_dim,
-                        dropout,
+                        emb_channels=time_embed_dim,
+                        in_channels=ch,
+                        dropout=dropout,
                         out_channels=int(mult * model_channels),
                         use_scale_shift_norm=use_scale_shift_norm,
                     )
-                ]
+                ])
                 ch = int(mult * model_channels)
                 if ds in attention_resolutions:
                     layers.append(
@@ -78,7 +81,37 @@ class UNetModel(nn.Module):
                             cond_dim=time_embed_dim,
                         )
                     )
-                self.input_blocks.append(TimestepEmbedSequential(*layers))
+                self.input_blocks.append(layers)
+                self._feature_size += ch
+                input_block_chans.append(ch)
+            
+            if level != len(channel_mult) - 1:
+                out_ch = ch
+                downsample_block = nn.ModuleList()
+                if resblock_updown:
+                    downsample_block.append(
+                        ResBlock(
+                            emb_channels=time_embed_dim,
+                            in_channels=ch,
+                            dropout=dropout,
+                            out_channels=out_ch,
+                            use_scale_shift_norm=use_scale_shift_norm,
+                            down=True,
+                        )
+                    )
+                else:
+                    downsample_block.append(
+                        Downsample(
+                            ch,
+                            conv_resample,
+                            out_channels=out_ch,
+                        )
+                    )
+                
+                self.input_blocks.append(downsample_block)
+                ch = out_ch
+                input_block_chans.append(ch)
+                ds *= 2
                 self._feature_size += ch
                 input_block_chans.append(ch)
             if level != len(channel_mult) - 1:
@@ -86,9 +119,9 @@ class UNetModel(nn.Module):
                 self.input_blocks.append(
                     TimestepEmbedSequential(
                         ResBlock(
-                            ch,
-                            time_embed_dim,
-                            dropout,
+                            emb_channels=time_embed_dim,
+                            in_channels=ch,
+                            dropout=dropout,
                             out_channels=out_ch,
                             use_scale_shift_norm=use_scale_shift_norm,
                             down=True,
@@ -108,20 +141,21 @@ class UNetModel(nn.Module):
 
         self.middle_block = TimestepEmbedSequential(
             ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
+                emb_channels=time_embed_dim,
+                in_channels=ch,
+                dropout=dropout,
                 out_channels=ch,
                 use_scale_shift_norm=use_scale_shift_norm,
             ),
+                
             QKVAttention(
                 latent_channels=ch,
                 cond_dim=time_embed_dim,
             ),
             ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
+                emb_channels=time_embed_dim,
+                in_channels=ch,
+                dropout=dropout,
                 use_scale_shift_norm=use_scale_shift_norm,
             ),
         )
@@ -133,9 +167,9 @@ class UNetModel(nn.Module):
                 ich = input_block_chans.pop()
                 layers = [
                     ResBlock(
-                        ch + ich,
-                        time_embed_dim,
-                        dropout,
+                        emb_channels=time_embed_dim,
+                        in_channels = ch + ich,
+                        dropout=dropout,
                         out_channels=int(model_channels * mult),
                         use_scale_shift_norm=use_scale_shift_norm,
                     )
@@ -152,9 +186,9 @@ class UNetModel(nn.Module):
                     out_ch = ch
                     layers.append(
                         ResBlock(
-                            ch,
-                            time_embed_dim,
-                            dropout,
+                            in_channels=ch,
+                            emb_channels=time_embed_dim,
+                            dropout=dropout,
                             out_channels=out_ch,
                             use_scale_shift_norm=use_scale_shift_norm,
                             up=True,
