@@ -27,6 +27,7 @@ dependencies:
       - accelerate
       - loralib
       - peft
+      - thop
 
   - conda:
     - libvips

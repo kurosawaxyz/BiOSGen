@@ -1,4 +1,5 @@
 device: "cpu"
+savefig: False
 
 VAEncoder:
   in_channels: 3
@@ -11,4 +12,16 @@ VAEncoder:
 
 Attention:
   latent_channels: 4
-  
+  cond_dim: 256
+
+Image:
+  tissue_mask_params: 
+    kernel_size: 20
+    sigma: 20
+    downsample: 8
+    background_gray_threshold: 220
+
+  patch_extraction_params:
+    patch_size: 128
+    patch_tissue_threshold: 0.7
+    is_visualize: False

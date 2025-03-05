@@ -11,7 +11,7 @@ class AbstractAttention(nn.Module, ABC):
     def forward(self, x):
         pass
     
-class CrossAttentionBlock(AbstractAttention):
+class QKVAttention(AbstractAttention):
     def __init__(self, latent_channels=4, cond_dim=256):
         super().__init__()
         self.norm = nn.GroupNorm(2, latent_channels)

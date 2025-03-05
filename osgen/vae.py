@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 import loralib as lora
 
-from .network import CrossAttentionBlock
+from .network import QKVAttention
 
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod
@@ -114,13 +114,12 @@ class ConditionedVAEncoder(AbstractVAE):
         in_channels_params: List[int] = [3, 96, 128, 192],
         out_channels_params: List[int] = [96, 128, 192, 256],
         kernel_params: List[int] = [3, 3, 3, 3],
-        stride_params: List[int] = [2, 1, 1, 1],  
+        stride_params: List[int] = [1, 1, 1, 1],  
         padding_params: List[int] = [1, 1, 1, 1],  
         pooling_layers: List[int] = [0,2],  
         activation_function: str = "relu",
         device: str = "cuda",
         cond_dim: int = 256,
-        heads: int = 8,
         *args,
         **kwargs
     ):
@@ -137,7 +136,7 @@ class ConditionedVAEncoder(AbstractVAE):
             activation_function=activation_function,
             device=device
         )
-        self.conditioning = CrossAttentionBlock(latent_channels, cond_dim, heads)
+        self.conditioning = QKVAttention(latent_channels=latent_channels, cond_dim=cond_dim)
         
     def forward(self, x, condition_embedding):
         # Apply reparameterization
@@ -146,6 +145,7 @@ class ConditionedVAEncoder(AbstractVAE):
         eps = torch.randn_like(std)
         z = mu + eps * std
         
+        print(f"Z shape: {z.shape}, Condition shape: {condition_embedding.shape}")
         # Apply conditioning
         conditioned_z = self.conditioning(z, condition_embedding)
         return conditioned_z
