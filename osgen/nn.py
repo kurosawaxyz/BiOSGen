@@ -6,6 +6,7 @@ import loralib as lora
 
 import math
 
+
 def timestep_embedding(timesteps, dim, max_period=10000):
     """
     Create sinusoidal timestep embeddings.
@@ -53,6 +54,46 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
             else:
                 x = layer(x)
         return x
+    
+# Class: Attention
+class AbstractAttention(nn.Module, ABC):
+    @abstractmethod
+    def forward(self, x):
+        pass
+    
+class QKVAttention(AbstractAttention):
+    def __init__(
+        self, 
+        latent_channels=4, 
+        cond_dim=256,
+        *args,
+        **kwargs
+    ):
+        super().__init__()
+        self.norm = nn.GroupNorm(2, latent_channels)
+        self.proj_q = lora.Conv2d(latent_channels, latent_channels, 1)
+        self.proj_k = lora.Linear(cond_dim, latent_channels)
+        self.proj_v = lora.Linear(cond_dim, latent_channels)
+        self.proj_out = lora.Conv2d(latent_channels, latent_channels, 1)
+        
+    def forward(self, x, cond):
+        # x: [B, 4, 8, 8], cond: [B, 256]
+        B, C, H, W = x.shape
+        
+        # Normalize and get query
+        h = self.norm(x)
+        q = self.proj_q(h).view(B, C, -1)  # [B, 4, 64]
+        
+        # Get key and value from condition
+        k = self.proj_k(cond).unsqueeze(-1)  # [B, 4, 1]
+        v = self.proj_v(cond).unsqueeze(-1)  # [B, 4, 1]
+        
+        # Attention
+        weight = torch.bmm(q.permute(0, 2, 1), k)  # [B, 64, 1]
+        weight = F.softmax(weight, dim=1)
+        h = torch.bmm(v, weight.permute(0, 2, 1)).view(B, C, H, W)  # [B, 4, 8, 8]
+
+        return x + self.proj_out(h)
     
 # Class: Upsample
 class Upsample(nn.Module):
@@ -105,12 +146,11 @@ class Downsample(nn.Module):
     def forward(self, x):
         return self.op(x)
     
-# Class: ResBlock
 class ResBlock(TimestepBlock):
     def __init__(
         self,
         emb_channels: int,
-        dropout: float,
+        dropout: float,                 # Bottleneck dropout
         in_channels: int = 4,
         use_conv=False,
         out_channels: int = None,
@@ -156,7 +196,7 @@ class ResBlock(TimestepBlock):
 
         # Last layers
         self.out_layers = nn.Sequential(
-            nn.BatchNorm2d(out_channels),
+            nn.BatchNorm2d(out_channels), 
             nn.SiLU(),
             nn.Dropout(p=dropout),
             lora.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
