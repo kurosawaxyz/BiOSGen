@@ -1,0 +1,206 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from abc import ABC, abstractmethod
+import loralib as lora
+
+import math
+
+def timestep_embedding(timesteps, dim, max_period=10000):
+    """
+    Create sinusoidal timestep embeddings.
+
+    :param timesteps: a 1-D Tensor of N indices, one per batch element.
+                      These may be fractional.
+    :param dim: the dimension of the output.
+    :param max_period: controls the minimum frequency of the embeddings.
+    :return: an [N x dim] Tensor of positional embeddings.
+    """
+    half = dim // 2
+    freqs = torch.exp(
+        -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half
+    ).to(device=timesteps.device)
+    args = timesteps[:, None].float() * freqs[None]
+    embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
+    if dim % 2:
+        embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
+    return embedding
+
+
+# Class: TimestepBlock
+class TimestepBlock(nn.Module, ABC):
+    """
+    Any module where forward() takes timestep embeddings as a second argument.
+    """
+
+    @abstractmethod
+    def forward(self, x, emb):
+        """
+        Apply the module to `x` given `emb` timestep embeddings.
+        """
+
+
+class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
+    """
+    A sequential module that passes timestep embeddings to the children that
+    support it as an extra input.
+    """
+
+    def forward(self, x, emb):
+        for layer in self:
+            if isinstance(layer, TimestepBlock):
+                x = layer(x, emb)
+            else:
+                x = layer(x)
+        return x
+    
+# Class: Upsample
+class Upsample(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        use_conv: bool = True,
+        out_channels: int = None,
+        *args,
+        **kwargs
+    ):
+        super().__init__()
+        self.use_conv = use_conv
+        self.in_channels = in_channels
+        self.out_channels = out_channels or in_channels
+        if use_conv:
+            self.conv = lora.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1)
+
+    def forward(self, x):
+        x = F.interpolate(x, scale_factor=2, mode="nearest")
+        if self.use_conv:
+            x = self.conv(x)
+        return x
+    
+# Class: Downsample
+class Downsample(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        use_conv: bool = True,
+        out_channels: int = None,
+        *args,
+        **kwargs
+    ):
+        super().__init__()
+        self.use_conv = use_conv
+        self.in_channels = in_channels
+        self.out_channels = out_channels or in_channels
+        stride = 2
+        if use_conv:
+            self.op = lora.Conv2d(
+                in_channels, 
+                self.out_channels, 
+                kernel_size=3, 
+                stride=stride,
+                padding=1)
+        else:
+            self.op = nn.AvgPool2d(kernel_size=stride, stride=stride)
+
+    def forward(self, x):
+        return self.op(x)
+    
+# Class: ResBlock
+class ResBlock(TimestepBlock):
+    def __init__(
+        self,
+        emb_channels: int,
+        dropout: float,
+        in_channels: int = 4,
+        use_conv=False,
+        out_channels: int = None,
+        up=False,
+        down=False,
+        use_scale_shift_norm=False,
+        *args,
+        **kwargs
+    ):
+        # Define parameters
+        super().__init__()
+        self.emb_channels = emb_channels
+        self.dropout = dropout
+        self.in_channels = in_channels
+        self.use_conv = use_conv
+        self.out_channels = out_channels or in_channels
+        # print(f"Out channels: {self.out_channels, out_channels}")
+        self.updown = up or down
+        self.use_scale_shift_norm = use_scale_shift_norm
+
+        # Define layers
+        # Layer 1
+        self.in_layers = nn.Sequential(
+            nn.BatchNorm2d(self.in_channels),  
+            nn.SiLU(),
+            lora.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1)  
+        )
+
+        # Middle layers
+        if up:
+            self.h_upd = Upsample(in_channels, use_conv, out_channels)
+            self.x_upd = Upsample(in_channels, use_conv, out_channels)
+        elif down:
+            self.h_upd = Downsample(in_channels, use_conv, out_channels)
+            self.x_upd = Downsample(in_channels, use_conv, out_channels)
+        else:
+            self.h_upd = self.x_upd = nn.Identity()
+
+        self.emb_layers = nn.Sequential(
+            nn.SiLU(),
+            lora.Linear(emb_channels, 2 * out_channels if use_scale_shift_norm else self.out_channels)
+        )
+
+        # Last layers
+        self.out_layers = nn.Sequential(
+            nn.BatchNorm2d(out_channels),
+            nn.SiLU(),
+            nn.Dropout(p=dropout),
+            lora.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        )
+
+        # if self.out_channels == in_channels:
+        #     self.skip_connection = nn.Identity()
+        # elif use_conv:
+        #     self.skip_connection = lora.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        # else:
+        #     self.skip_connection = lora.Linear(in_channels, out_channels)  # Fix: Remove `kernel_size=1
+        if self.out_channels == self.in_channels:
+            self.skip_connection = nn.Identity()
+        else:
+            self.skip_connection = lora.Conv2d(self.in_channels, self.out_channels, kernel_size=1)  # Ensure correct mapping
+
+
+
+    def forward(self, x, emb):
+        # print(f"Input shape: {x.shape}")  # Expecting [1, 4, 32, 32]
+        if self.updown:
+            in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
+            h = in_rest(x)
+            h = self.h_upd(h)
+            x = self.x_upd(x)
+            h = in_conv(h)
+
+            # print(f"After in_layers: {self.in_layers(x).shape}")  # Expecting [1, 8, 32, 32]
+
+        else:
+            h = self.in_layers(x)
+
+        emb_out = self.emb_layers(emb).type(h.dtype)
+
+        if self.use_scale_shift_norm:
+            out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
+            scale, shift = torch.chunk(emb_out, 2, dim=1)
+            h = out_norm(h) * (1 + scale[:, :, None, None]) + shift[:, :, None, None]
+            h = out_rest(h)
+        else:
+            h = h + emb_out[:, :, None, None]  # **Fixed dimension mismatch**
+            h = self.out_layers(h)
+
+        res = self.skip_connection(x) + h
+        # print(f"After skip_connection: {self.skip_connection(x).shape}")  # Expecting [1, 8, 32, 32]
+
+        return res

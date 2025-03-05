@@ -12,7 +12,13 @@ class AbstractAttention(nn.Module, ABC):
         pass
     
 class QKVAttention(AbstractAttention):
-    def __init__(self, latent_channels=4, cond_dim=256):
+    def __init__(
+        self, 
+        latent_channels=4, 
+        cond_dim=256,
+        *args,
+        **kwargs
+    ):
         super().__init__()
         self.norm = nn.GroupNorm(2, latent_channels)
         self.proj_q = lora.Conv2d(latent_channels, latent_channels, 1)
@@ -38,3 +44,4 @@ class QKVAttention(AbstractAttention):
         h = torch.bmm(v, weight.permute(0, 2, 1)).view(B, C, H, W)  # [B, 4, 8, 8]
 
         return x + self.proj_out(h)
+    

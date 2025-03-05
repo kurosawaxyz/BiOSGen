@@ -1,7 +1,7 @@
 import torch 
 import torch.nn as nn
 
-from utils import describe_img
+from osgen.nn import describe_img
 from vae import VAEncoder, VAEDecoder
 from vcm import extract_style_emb
 
