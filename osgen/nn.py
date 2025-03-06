@@ -61,7 +61,7 @@ class AbstractAttention(nn.Module, ABC):
     def forward(self, x):
         pass
     
-class QKVAttention(AbstractAttention):
+class CrossAttentionStyleFusion(AbstractAttention):
     def __init__(
         self, 
         latent_channels=4, 

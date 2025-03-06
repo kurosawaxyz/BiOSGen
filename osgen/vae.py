@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 import loralib as lora
 
-from .network import QKVAttention
+from .network import CrossAttentionStyleFusion
 
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod
@@ -136,7 +136,7 @@ class ConditionedVAEncoder(AbstractVAE):
             activation_function=activation_function,
             device=device
         )
-        self.conditioning = QKVAttention(latent_channels=latent_channels, cond_dim=cond_dim)
+        self.conditioning = CrossAttentionStyleFusion(latent_channels=latent_channels, cond_dim=cond_dim)
         
     def forward(self, x, condition_embedding):
         # Apply reparameterization

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import loralib as lora
 
-from .network import QKVAttention, TimestepEmbedSequential, ResBlock, Downsample, Upsample, timestep_embedding
+from .network import CrossAttentionStyleFusion, TimestepEmbedSequential, ResBlock, Downsample, Upsample, timestep_embedding
 
 class UNetModel(nn.Module):
     def __init__(
@@ -76,7 +76,7 @@ class UNetModel(nn.Module):
                 ch = int(mult * model_channels)
                 if ds in attention_resolutions:
                     layers.append(
-                        QKVAttention(
+                        CrossAttentionStyleFusion(
                             latent_channels=ch,
                             cond_dim=time_embed_dim,
                         )
@@ -148,7 +148,7 @@ class UNetModel(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
             ),
                 
-            QKVAttention(
+            CrossAttentionStyleFusion(
                 latent_channels=ch,
                 cond_dim=time_embed_dim,
             ),
@@ -177,7 +177,7 @@ class UNetModel(nn.Module):
                 ch = int(model_channels * mult)
                 if ds in attention_resolutions:
                     layers.append(
-                        QKVAttention(
+                        CrossAttentionStyleFusion(
                             latent_channels=ch,
                             cond_dim=time_embed_dim,
                         )
@@ -232,11 +232,21 @@ class UNetModel(nn.Module):
 
         h = x.type(self.dtype)
         for module in self.input_blocks:
-            h = module(h, emb)
+            for layer in module:  # Iterate through each layer inside the module
+                print(f"Layer type: {type(layer).__name__}")
+                if type(layer).__name__ in ["ResBlock", "CrossAttentionStyleFusion"]:
+                    h = layer(h, emb)
+                else:
+                    h = layer(h)      # Remove emb for now
             hs.append(h)
         h = self.middle_block(h, emb)
         for module in self.output_blocks:
             h = torch.cat([h, hs.pop()], dim=1)
-            h = module(h, emb)
+            for layer in module:  # Iterate through each layer inside the module
+                print(f"Layer type: {type(layer).__name__}")
+                if type(layer).__name__ in ["ResBlock", "CrossAttentionStyleFusion"]:
+                    h = layer(h, emb)
+                else:
+                    h = layer(h)      # Remove emb for now
         h = h.type(x.dtype)
         return self.out(h)
