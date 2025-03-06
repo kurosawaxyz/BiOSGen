@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import loralib as lora
 
-from .network import CrossAttentionStyleFusion, TimestepEmbedSequential, ResBlock, Downsample, Upsample, timestep_embedding
+from .nn import CrossAttentionStyleFusion, TimestepEmbedSequential, ResBlock, Downsample, Upsample, timestep_embedding
 
 class UNetModel(nn.Module):
     def __init__(

@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style(style='darkgrid')
 
+import loralib as lora
+
 # Vision-Language Projector (MLP)
 """
 VISION LANGUAGE PROJECTOR with MLP architecture

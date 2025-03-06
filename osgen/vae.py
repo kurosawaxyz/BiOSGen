@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 import loralib as lora
 
-from .network import CrossAttentionStyleFusion
+from .nn import CrossAttentionStyleFusion
 
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod

@@ -8,6 +8,9 @@ from typing import List
 import matplotlib.pyplot as plt
 import matplotlib
 from PIL import Image
+import cv2
+
+from .tissue_mask import GaussianTissueMask
 
 # moondream
 def load_md(
