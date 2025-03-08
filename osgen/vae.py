@@ -8,6 +8,8 @@ import loralib as lora
 
 from .nn import CrossAttentionStyleFusion
 
+# ENCODER
+
 class AbstractVAE(nn.Module, ABC):
     @abstractmethod
     def forward(self, x):
@@ -94,7 +96,7 @@ class VAEncoder(AbstractVAE):
             padding=0  # Modified: No padding for 1x1 conv
         )
 
-    def forward(self, x):
+    def get_mu_logvar(self, x):
         for i in range(self.latent_channels):
             x = getattr(self, f"encoder_{i}")(x)
             
@@ -104,6 +106,14 @@ class VAEncoder(AbstractVAE):
         print(f"Mean shape: {mu.shape}, Log Variance shape: {logvar.shape}")
         
         return mu, logvar
+    
+    def forward(self,x):
+        mu, logvar = self.get_mu_logvar(x)
+        # Apply reparameterization
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + eps * std
+        return z
        
         
 class ConditionedVAEncoder(AbstractVAE):
@@ -140,7 +150,7 @@ class ConditionedVAEncoder(AbstractVAE):
         
     def forward(self, x, condition_embedding):
         # Apply reparameterization
-        mu, logvar = self.encoder(x)
+        mu, logvar = self.encoder.get_mu_logvar(x)
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         z = mu + eps * std
@@ -149,3 +159,108 @@ class ConditionedVAEncoder(AbstractVAE):
         # Apply conditioning
         conditioned_z = self.conditioning(z, condition_embedding)
         return conditioned_z
+    
+
+
+# DECODER
+class VAEDecoder(nn.Module):
+    """
+    Variational Autoencoder (VAE) Decoder for transforming UNet output back to image space.
+    Designed to work with an output shape of [batch_size, 4, 128, 128].
+    """
+    def __init__(
+        self, 
+        in_channels: int = 4,     # UNet output channels
+        out_channels: int = 3,    # RGB image
+        hidden_dims: List[int] = [64, 128, 256, 512],
+        activation_function: str = "silu",
+        use_condition: bool = True,
+        cond_dim: int = 256,
+        device: str = "cuda",
+        *args,
+        **kwargs
+    ):
+        super(VAEDecoder, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.hidden_dims = hidden_dims
+        self.use_condition = use_condition
+        self.device = device
+        
+        # Condition embedding integration
+        if use_condition:
+            self.condition_attention = CrossAttentionStyleFusion(
+                latent_channels=in_channels,
+                cond_dim=cond_dim
+            )
+        
+        # Initial projection - maintain spatial dimensions
+        self.proj = nn.Sequential(
+            lora.Conv2d(in_channels, hidden_dims[0], kernel_size=3, padding=1),
+            nn.BatchNorm2d(hidden_dims[0]),
+            nn.SiLU() if activation_function == "silu" else nn.ReLU()
+        )
+        
+        # Decoder architecture
+        self.decoder_layers = nn.ModuleList()
+        
+        # Build decoder architecture with upsampling
+        current_dim = hidden_dims[0]
+        
+        # Add decoder blocks with upsampling
+        for i in range(1, len(hidden_dims)):
+            decoder_block = nn.Sequential(
+                # Upsampling convolution
+                nn.Upsample(scale_factor=2, mode="nearest"),
+                lora.Conv2d(current_dim, hidden_dims[i] // 2, kernel_size=3, padding=1),
+                nn.BatchNorm2d(hidden_dims[i] // 2),
+                nn.SiLU() if activation_function == "silu" else nn.ReLU(),
+                
+                # Regular convolution
+                lora.Conv2d(hidden_dims[i] // 2, hidden_dims[i] // 2, kernel_size=3, padding=1),
+                nn.BatchNorm2d(hidden_dims[i] // 2),
+                nn.SiLU() if activation_function == "silu" else nn.ReLU()
+            )
+            self.decoder_layers.append(decoder_block)
+            current_dim = hidden_dims[i] // 2
+        
+        # Final output layer to get back to 3 channels (RGB image)
+        self.final_layer = nn.Sequential(
+            lora.Conv2d(current_dim, current_dim // 2, kernel_size=3, padding=1),
+            nn.BatchNorm2d(current_dim // 2),
+            nn.SiLU() if activation_function == "silu" else nn.ReLU(),
+            lora.Conv2d(current_dim // 2, out_channels, kernel_size=3, padding=1),
+            nn.Sigmoid()  # Normalize output to [0, 1] range
+        )
+
+        
+    def forward(self, x, condition=None):
+        """
+        Forward pass of the decoder
+        Args:
+            x: Tensor of shape [batch_size, 4, 128, 128] (UNet output)
+            condition: Optional condition embedding of shape [batch_size, 256]
+        Returns:
+            Decoded image of shape [batch_size, 3, 512, 512]
+        """
+        # Apply condition using cross-attention if available
+        print(f"Input shape: {x.shape}")
+        if self.use_condition and condition is not None:
+            x = self.condition_attention(x, condition)
+
+        print(f"Conditioned shape: {x.shape}")
+        
+        # Initial projection
+        x = self.proj(x)
+        print(f"Projected shape: {x.shape}")
+        
+        # Apply decoder layers with upsampling
+        for layer in self.decoder_layers:
+            x = layer(x)
+            print(f"Layer {layer} done")
+        
+        # Final layer to get RGB image
+        output = self.final_layer(x)
+        print("Done")
+        
+        return output
