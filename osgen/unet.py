@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import loralib as lora
 
-from .nn import CrossAttentionStyleFusion, TimestepEmbedSequential, ResBlock, Downsample, Upsample, timestep_embedding
+from .nn import TimestepEmbedSequential, ResBlock, Downsample, Upsample, timestep_embedding
 
 class UNetModel(nn.Module):
     def __init__(
@@ -75,13 +75,13 @@ class UNetModel(nn.Module):
                 out_channels=ch,
                 use_scale_shift_norm=use_scale_shift_norm,
             ),
-            ResBlock(
-                emb_channels=time_embed_dim,
-                in_channels=ch,
-                dropout=dropout,
-                out_channels=ch,
-                use_scale_shift_norm=use_scale_shift_norm,
-            ),
+            # ResBlock(
+            #     emb_channels=time_embed_dim,
+            #     in_channels=ch,
+            #     dropout=dropout,
+            #     out_channels=ch,
+            #     use_scale_shift_norm=use_scale_shift_norm,
+            # ),
         )
         
         self.output_blocks = nn.ModuleList([])
@@ -100,7 +100,7 @@ class UNetModel(nn.Module):
                 ch = int(model_channels * mult)
 
                 # Ensure we upsample back to 128×128
-                if level != 0 and (i == num_res_blocks or ch < self.model_channels * max(channel_mult)):
+                if level != 0 and (ch < self.model_channels * max(channel_mult)):   # Remove condition i == num_res_blocks 
                     layers.append(Upsample(ch, conv_resample, out_channels=ch))
 
                 self.output_blocks.append(TimestepEmbedSequential(*layers))

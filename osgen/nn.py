@@ -77,21 +77,25 @@ class CrossAttentionStyleFusion(AbstractAttention):
         self.proj_out = lora.Conv2d(latent_channels, latent_channels, 1)
         
     def forward(self, x, cond):
-        # x: [B, 4, 8, 8], cond: [B, 256]
+        # x: [B, 4, H, W], cond: [B, 256]
         B, C, H, W = x.shape
         
         # Normalize and get query
         h = self.norm(x)
-        q = self.proj_q(h).view(B, C, -1)  # [B, 4, 64]
+        q = self.proj_q(h)                      # [B, 4, H, W]
+        q = q.reshape(B, C, -1)                 # [B, 4, H*W]
         
         # Get key and value from condition
-        k = self.proj_k(cond).unsqueeze(-1)  # [B, 4, 1]
-        v = self.proj_v(cond).unsqueeze(-1)  # [B, 4, 1]
+        k = self.proj_k(cond).unsqueeze(-1)     # [B, 4, 1]
+        v = self.proj_v(cond).unsqueeze(-1)     # [B, 4, 1]
         
         # Attention
-        weight = torch.bmm(q.permute(0, 2, 1), k)  # [B, 64, 1]
+        weight = torch.bmm(q.permute(0, 2, 1), k)  # [B, H*W, 1]
         weight = F.softmax(weight, dim=1)
-        h = torch.bmm(v, weight.permute(0, 2, 1)).view(B, C, H, W)  # [B, 4, 8, 8]
+        
+        # Apply attention and reshape back to spatial dimensions
+        h = torch.bmm(v, weight.permute(0, 2, 1))  # [B, 4, H*W]
+        h = h.reshape(B, C, H, W)                  # [B, 4, H, W]
 
         return x + self.proj_out(h)
     
