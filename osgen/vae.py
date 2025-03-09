@@ -213,103 +213,69 @@ class ConditionedVAEncoder(AbstractVAE):
 
 # DECODER
 class VAEDecoder(nn.Module):
-    """
-    Variational Autoencoder (VAE) Decoder for transforming UNet output back to image space.
-    Designed to work with an output shape of [batch_size, 4, 128, 128].
-    """
     def __init__(
         self, 
-        in_channels: int = 4,     # UNet output channels
-        out_channels: int = 3,    # RGB image
-        hidden_dims: List[int] = [64, 128, 256, 512],
+        in_channels: int = 4,
+        out_channels: int = 3,
+        hidden_dims: list = [64, 128, 256, 512],
         activation_function: str = "silu",
-        use_condition: bool = True,
-        cond_dim: int = 256,
+        # cond_dim: int = 256,
         device: str = "cuda",
-        *args,
-        **kwargs
     ):
         super(VAEDecoder, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.hidden_dims = hidden_dims
-        self.use_condition = use_condition
         self.device = device
-        
-        # Condition embedding integration
-        if use_condition:
-            self.condition_attention = CrossAttentionStyleFusion(
-                latent_channels=in_channels,
-                cond_dim=cond_dim
-            )
-        
-        # Initial projection - maintain spatial dimensions
+
+        # First layer: Projection (from 4 channels to the first hidden dimension)
         self.proj = nn.Sequential(
-            lora.Conv2d(in_channels, hidden_dims[0], kernel_size=3, padding=1),
+            nn.ConvTranspose2d(in_channels, hidden_dims[0], kernel_size=3, stride=1, padding=1, output_padding=0),
+            nn.ReLU(),
             nn.BatchNorm2d(hidden_dims[0]),
-            nn.SiLU() if activation_function == "silu" else nn.ReLU()
-        )
+        ) 
         
-        # Decoder architecture
+        # Decoder layers
         self.decoder_layers = nn.ModuleList()
-        
-        # Build decoder architecture with upsampling
         current_dim = hidden_dims[0]
         
-        # Add decoder blocks with upsampling
         for i in range(1, len(hidden_dims)):
             decoder_block = nn.Sequential(
-                # Upsampling convolution
                 nn.Upsample(scale_factor=2, mode="nearest"),
-                lora.Conv2d(current_dim, hidden_dims[i] // 2, kernel_size=3, padding=1),
+                nn.Conv2d(current_dim, hidden_dims[i] // 2, kernel_size=3, padding=1),
                 nn.BatchNorm2d(hidden_dims[i] // 2),
                 nn.SiLU() if activation_function == "silu" else nn.ReLU(),
                 
-                # Regular convolution
-                lora.Conv2d(hidden_dims[i] // 2, hidden_dims[i] // 2, kernel_size=3, padding=1),
+                nn.Conv2d(hidden_dims[i] // 2, hidden_dims[i] // 2, kernel_size=3, padding=1),
                 nn.BatchNorm2d(hidden_dims[i] // 2),
                 nn.SiLU() if activation_function == "silu" else nn.ReLU()
             )
             self.decoder_layers.append(decoder_block)
             current_dim = hidden_dims[i] // 2
-        
-        # Final output layer to get back to 3 channels (RGB image)
+
+        # Final output layer
         self.final_layer = nn.Sequential(
-            lora.Conv2d(current_dim, current_dim // 2, kernel_size=3, padding=1),
-            nn.BatchNorm2d(current_dim // 2),
-            nn.SiLU() if activation_function == "silu" else nn.ReLU(),
-            lora.Conv2d(current_dim // 2, out_channels, kernel_size=3, padding=1),
-            nn.Sigmoid()  # Normalize output to [0, 1] range
+            nn.Conv2d(current_dim, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.Sigmoid(),
         )
 
-        
-    def forward(self, x, condition=None):
-        """
-        Forward pass of the decoder
-        Args:
-            x: Tensor of shape [batch_size, 4, 128, 128] (UNet output)
-            condition: Optional condition embedding of shape [batch_size, 256]
-        Returns:
-            Decoded image of shape [batch_size, 3, 512, 512]
-        """
-        # Apply condition using cross-attention if available
+    def forward(self, x):
         print(f"Input shape: {x.shape}")
-        if self.use_condition and condition is not None:
-            x = self.condition_attention(x, condition)
 
-        print(f"Conditioned shape: {x.shape}")
-        
         # Initial projection
         x = self.proj(x)
-        print(f"Projected shape: {x.shape}")
+        print(f"After projection: {x.shape}")
         
-        # Apply decoder layers with upsampling
-        for layer in self.decoder_layers:
+        # Decoder layers
+        for i, layer in enumerate(self.decoder_layers):
             x = layer(x)
-            print(f"Layer {layer} done")
-        
-        # Final layer to get RGB image
+            print(f"After decoder layer {i}: {x.shape}")
+
+        # Final output layer
         output = self.final_layer(x)
-        print("Done")
+        print(f"Final output shape: {output.shape}")
         
         return output
