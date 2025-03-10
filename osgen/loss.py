@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
+import torchvision.models as models
 
+# Structure loss
 def structure_preservation_loss(original_image, generated_image, lambda_structure=1.0):
     """
     Compute a loss that encourages structural preservation between the original and generated images.
@@ -9,6 +11,9 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     if original_image.shape != generated_image.shape:
         print("Original and generated images have different shapes. Resizing generated image to match original image.")
         generated_image_resized = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
+    else: 
+        generated_image_resized = generated_image
 
     # 1. MSE for pixel-level preservation
     mse_loss = F.mse_loss(generated_image_resized, original_image)
@@ -36,6 +41,7 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     total_loss = mse_loss + edge_loss
     return lambda_structure * total_loss
 
+# Color Alignment Loss
 def color_alignment_loss(original_image, generated_image, bins=256, lambda_color=1.0):
     """
     Compute the Color Alignment Loss (LCA) between the original and generated images.
@@ -70,3 +76,77 @@ def color_alignment_loss(original_image, generated_image, bins=256, lambda_color
     color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
 
     return lambda_color * color_loss
+
+# Content loss
+# Load a pre-trained VGG model (only for feature extraction)
+vgg = models.vgg19(pretrained=True).features.eval()
+
+def extract_features(image, model, layers):
+    """ Extracts features from specified layers of a CNN """
+    features = {}
+    x = image
+    for name, layer in model._modules.items():
+        x = layer(x)
+        if name in layers:
+            features[name] = x
+    return features
+
+def content_loss(original_image, generated_image, lambda_content=1.0):
+    """
+    Compute content loss between original and generated images using VGG-19.
+    Ensures the generated image retains high-level structures from the original.
+    """
+    content_layers = ["21"]  # Use ReLU4_2 layer (high-level features)
+    orig_features = extract_features(original_image, vgg, content_layers)
+    gen_features = extract_features(generated_image, vgg, content_layers)
+    
+    loss = F.mse_loss(gen_features["21"], orig_features["21"])
+    
+    return lambda_content * loss
+
+# Style loss
+def gram_matrix(features):
+    """ Compute Gram matrix of feature maps """
+    B, C, H, W = features.shape
+    features = features.view(C, H * W)
+    G = torch.mm(features, features.t())  # Compute Gram matrix
+    return G.div(C * H * W)  # Normalize
+
+def style_loss(original_image, generated_image, lambda_style=1.0):
+    """
+    Compute style loss between original and generated images.
+    Uses Gram matrices to compare feature correlations.
+    """
+    style_layers = ["0", "5", "10", "19", "28"]  # VGG19 ReLU layers for style
+    orig_features = extract_features(original_image, vgg, style_layers)
+    gen_features = extract_features(generated_image, vgg, style_layers)
+
+    loss = 0
+    for layer in style_layers:
+        G_orig = gram_matrix(orig_features[layer])
+        G_gen = gram_matrix(gen_features[layer])
+        loss += F.mse_loss(G_gen, G_orig)
+
+    return lambda_style * loss
+
+
+# Total variation loss
+def total_loss(original_image, generated_image, 
+               lambda_structure=1.0, lambda_color=1.0, 
+               lambda_content=1.0, lambda_style=1.0, image_size=128):
+    """
+    Compute the total loss by combining:
+    - Structure Preservation Loss
+    - Color Alignment Loss
+    - Content Loss
+    - Style Loss
+    """
+
+    structure_loss_value = structure_preservation_loss(original_image, generated_image, lambda_structure)
+    color_loss_value = color_alignment_loss(original_image, generated_image, image_size, lambda_color)
+    content_loss_value = content_loss(original_image, generated_image, lambda_content)
+    style_loss_value = style_loss(original_image, generated_image, lambda_style)
+
+    total = structure_loss_value + color_loss_value + content_loss_value + style_loss_value
+    return total
+
