@@ -131,6 +131,9 @@ def style_loss(original_image, generated_image, lambda_style=1.0):
 
 
 # Total variation loss
+def safe_loss(loss_value):
+    return torch.nan_to_num(loss_value, nan=0.0, posinf=0.0, neginf=0.0)
+
 def total_loss(original_image, generated_image, 
                lambda_structure=1.0, lambda_color=1.0, 
                lambda_content=1.0, lambda_style=1.0, image_size=128):
@@ -141,12 +144,14 @@ def total_loss(original_image, generated_image,
     - Content Loss
     - Style Loss
     """
-
-    structure_loss_value = structure_preservation_loss(original_image, generated_image, lambda_structure)
-    color_loss_value = color_alignment_loss(original_image, generated_image, image_size, lambda_color)
-    content_loss_value = content_loss(original_image, generated_image, lambda_content)
-    style_loss_value = style_loss(original_image, generated_image, lambda_style)
+    structure_loss_value = safe_loss(structure_preservation_loss(original_image, generated_image, lambda_structure))
+    color_loss_value = safe_loss(color_alignment_loss(original_image, generated_image, image_size, lambda_color))
+    content_loss_value = safe_loss(content_loss(original_image, generated_image, lambda_content))
+    style_loss_value = safe_loss(style_loss(original_image, generated_image, lambda_style))
+    print("Structure Loss:", structure_loss_value.item())
+    print("Color Loss:", color_loss_value.item())
+    print("Content Loss:", content_loss_value.item())
+    print("Style Loss:", style_loss_value.item())
 
     total = structure_loss_value + color_loss_value + content_loss_value + style_loss_value
     return total
-

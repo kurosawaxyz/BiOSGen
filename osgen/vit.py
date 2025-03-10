@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import clip 
+import numpy as np
 
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -54,7 +55,7 @@ def load_clip(device: str = "cuda"):
     return model, preprocess
 
 def extract_style_embedding(
-        image_path: str,
+        image_array: torch.Tensor,
         show: bool = False,
         device: str = "cuda",
         savefig: bool = False
@@ -71,8 +72,8 @@ def extract_style_embedding(
         style_embedding (torch.Tensor): Style embedding of the image
     """
     model, preprocess = load_clip(device)
-    
-    style_image = Image.open(image_path).convert("RGB")
+
+    style_image = Image.fromarray(image_array.permute(1, 2, 0).numpy().astype('uint8')).convert("RGB")
     style_tensor = preprocess(style_image).unsqueeze(0).to(device)
     # Extract features using CLIP image encoder
     with torch.no_grad():
