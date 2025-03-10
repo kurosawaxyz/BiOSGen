@@ -34,15 +34,22 @@ class StyleTransferPipeline(nn.Module):
         )
 
         # UNet Model
-        self.unet = UNetModel(
-            in_channels=latent_channels,
-            out_channels=latent_channels,
-            model_channels=unet_model_channels,
-            num_res_blocks=unet_num_res_blocks,
-            channel_mult=unet_channel_mult,
-            dropout=0.1,
-            image_size=128
-        )
+        model_params = {
+            'out_channels': 4,
+            'model_channels': 32,
+            'num_res_blocks': 2,
+            'dropout': 0.1,
+            'in_channels': 4,
+            'image_size': 32,
+            'use_scale_shift_norm': True,
+            'resblock_updown': False,  # Disable excessive downsampling
+            'num_classes': None,
+            'channel_mult': (1, 2, 4),  # Reduce max depth
+            # 'device': torch.device('cpu'),
+            # 'dtype': torch.float32
+        }
+
+        self.unet = UNetModel(**model_params)
 
         # VAE Decoder
         self.decoder = VAEDecoder(
@@ -68,12 +75,16 @@ class StyleTransferPipeline(nn.Module):
             Styled output image of shape [batch_size, 3, H, W]
         """
         # Encode input to latent space
-        latent = self.encoder(x, style_condition)
+        latent = self.encoder(x)
+
+        print("\nVAE Encoder Output Shape:", latent.shape,"\n")
         
         # Process with UNet
         unet_output = self.unet(latent, timesteps)
+        print("\nUnet Output Shape:", unet_output.shape,"\n")
         
         # Decode back to image space
-        output = self.decoder(unet_output, style_condition)
+        output = self.decoder(unet_output)
+        print("\nOutput Shape:", output.shape,"\n")
         
         return output

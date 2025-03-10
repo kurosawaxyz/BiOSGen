@@ -35,3 +35,38 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     # Total loss
     total_loss = mse_loss + edge_loss
     return lambda_structure * total_loss
+
+def color_alignment_loss(original_image, generated_image, bins=256, lambda_color=1.0):
+    """
+    Compute the Color Alignment Loss (LCA) between the original and generated images.
+    The loss compares the square root of the color histograms of the two images.
+    
+    Args:
+    - original_image: The target image (shape: [B, C, H, W]).
+    - generated_image: The generated image (shape: [B, C, H, W]).
+    - bins: The number of bins for the histogram (default is 256).
+    - lambda_color: A weight factor for the color loss (default is 1.0).
+    
+    Returns:
+    - The computed color alignment loss.
+    """
+    # Ensure images are in the range [0, 1]
+    original_image = original_image.clamp(0, 1)
+    generated_image = generated_image.clamp(0, 1)
+
+    # Compute histograms for each channel
+    hist_orig = torch.histc(original_image, bins=bins, min=0, max=1).view(1, -1)  # [1, bins]
+    hist_gen = torch.histc(generated_image, bins=bins, min=0, max=1).view(1, -1)  # [1, bins]
+
+    # Normalize histograms
+    hist_orig /= hist_orig.sum()
+    hist_gen /= hist_gen.sum()
+
+    # Compute the square root of histograms
+    hist_orig_sqrt = torch.sqrt(hist_orig)
+    hist_gen_sqrt = torch.sqrt(hist_gen)
+
+    # Compute L2 distance between the square roots of the histograms
+    color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
+
+    return lambda_color * color_loss

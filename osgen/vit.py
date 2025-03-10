@@ -16,7 +16,6 @@ Idea inspired from MLP-Mixer: An all-MLP Architecture for Vision
 Paper: https://arxiv.org/abs/2105.01601 by Tolstikhin et al. (2021)
 """
 class VisionLanguageProjector(nn.Module):
-    # To do reimplement the VisionLanguageProjector with the MLP-Mixer architecture
     def __init__(
         self,
         input_dim: int = 512,
@@ -105,4 +104,6 @@ def extract_style_embedding(
 
         plt.show()
     return style_embedding
+        
+
         

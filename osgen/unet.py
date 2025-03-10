@@ -123,8 +123,8 @@ class UNetModel(nn.Module):
         h = x
         for module in self.input_blocks:
             for layer in module:
-                print(f"Before {layer.__class__.__name__}: {h.shape}")
                 h = layer(h) if not isinstance(layer, ResBlock) else layer(h, emb)
+                print(f"After {layer.__class__.__name__}: {h.shape}")
             hs.append(h)
         
         h = self.middle_block(h, emb)
