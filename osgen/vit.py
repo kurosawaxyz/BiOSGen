@@ -86,14 +86,14 @@ def extract_style_embedding(
     # Normalize the image features (similar to text embeddings)
     image_features = image_features / image_features.norm(dim=-1, keepdim=True)
 
-    print("Image Features Shape:", image_features.shape)
+    # print("Image Features Shape:", image_features.shape)
 
 
     # Pass through Vision-Language Projector
     vl_projector = VisionLanguageProjector(input_dim=512, output_dim=256).to(device)
     style_embedding = vl_projector(image_features)
 
-    print("Transformed Style Embedding Shape:", style_embedding.shape)
+    # print("Transformed Style Embedding Shape:", style_embedding.shape)
 
     if show:
         _, ax = plt.subplots(2, 1, figsize=(12,2))

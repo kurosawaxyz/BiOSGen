@@ -8,15 +8,9 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     Compute a loss that encourages structural preservation between the original and generated images.
     This uses a combination of MSE for low-level features and edge similarity.
     """
-    if original_image.shape != generated_image.shape:
-        print("Original and generated images have different shapes. Resizing generated image to match original image.")
-        generated_image_resized = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
-
-    else: 
-        generated_image_resized = generated_image
 
     # 1. MSE for pixel-level preservation
-    mse_loss = F.mse_loss(generated_image_resized, original_image)
+    mse_loss = F.mse_loss(generated_image, original_image)
     
     # 2. Edge detection using Sobel filters
     sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], 
@@ -30,8 +24,8 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     orig_edges_y = F.conv2d(original_image, sobel_y, padding=1, groups=3)
     orig_edges = torch.sqrt(orig_edges_x**2 + orig_edges_y**2)
     
-    gen_edges_x = F.conv2d(generated_image_resized, sobel_x, padding=1, groups=3)
-    gen_edges_y = F.conv2d(generated_image_resized, sobel_y, padding=1, groups=3)
+    gen_edges_x = F.conv2d(generated_image, sobel_x, padding=1, groups=3)
+    gen_edges_y = F.conv2d(generated_image, sobel_y, padding=1, groups=3)
     gen_edges = torch.sqrt(gen_edges_x**2 + gen_edges_y**2)
     
     # Edge preservation loss
@@ -144,6 +138,12 @@ def total_loss(original_image, generated_image,
     - Content Loss
     - Style Loss
     """
+    if original_image.shape != generated_image.shape:
+        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
+    # Size of original image: [B, C, H, W]
+    # Size of generated image: [B, C, H, W] (may be different from original)
     structure_loss_value = safe_loss(structure_preservation_loss(original_image, generated_image, lambda_structure))
     color_loss_value = safe_loss(color_alignment_loss(original_image, generated_image, image_size, lambda_color))
     content_loss_value = safe_loss(content_loss(original_image, generated_image, lambda_content))

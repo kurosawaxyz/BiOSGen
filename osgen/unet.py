@@ -137,7 +137,7 @@ class UNetModel(nn.Module):
         for module in self.input_blocks:
             for layer in module:
                 h = layer(h) if not isinstance(layer, ResBlock) else layer(h, emb)
-                print(f"After {layer.__class__.__name__}: {h.shape}")
+                # print(f"After {layer.__class__.__name__}: {h.shape}")
             hs.append(h)
         
         h = self.middle_block(h, emb)
@@ -153,7 +153,7 @@ class UNetModel(nn.Module):
             if skip.shape[-2:] != h.shape[-2:]:
                 skip = F.interpolate(skip, size=h.shape[-2:], mode="nearest")
 
-            print(f"Upsampling: h={h.shape}, skip={skip.shape}")  # Debugging output
+            # print(f"Upsampling: h={h.shape}, skip={skip.shape}")  # Debugging output
             h = torch.cat([h, skip], dim=1)
             
             for layer in module:

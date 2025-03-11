@@ -101,14 +101,14 @@ class StyleTransferPipeline(nn.Module):
         # Encode input to latent space
         latent = self.encoder(x, style_condition)
 
-        print("\nVAE Encoder Output Shape:", latent.shape,"\n")
+        # print("\nVAE Encoder Output Shape:", latent.shape,"\n")
         
         # Process with UNet
         unet_output = self.unet(latent, timesteps)
-        print("\nUnet Output Shape:", unet_output.shape,"\n")
+        # print("\nUnet Output Shape:", unet_output.shape,"\n")
         
         # Decode back to image space
         output = self.decoder(unet_output)
-        print("\nOutput Shape:", output.shape,"\n")
+        # print("\nOutput Shape:", output.shape,"\n")
         
         return output

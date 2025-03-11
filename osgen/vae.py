@@ -164,7 +164,7 @@ class VAEncoder(AbstractVAE):
         mu = self.conv_mu(x)
         logvar = self.conv_logvar(x)
         
-        print(f"Mean shape: {mu.shape}, Log Variance shape: {logvar.shape}")
+        # print(f"Mean shape: {mu.shape}, Log Variance shape: {logvar.shape}")
         
         return mu, logvar
     
@@ -223,10 +223,10 @@ class ConditionedVAEncoder(AbstractVAE):
         eps = torch.randn_like(std)
         z = mu + eps * std
         
-        print(f"Z shape: {z.shape}, Condition shape: {condition_embedding.shape}")
+        # print(f"Z shape: {z.shape}, Condition shape: {condition_embedding.shape}")
         # Apply conditioning
         conditioned_z = self.conditioning(z, condition_embedding)
-        print(f"Conditioned Z shape: {conditioned_z.shape}")
+        # print(f"Conditioned Z shape: {conditioned_z.shape}")
         return conditioned_z
     
 
@@ -289,19 +289,19 @@ class VAEDecoder(nn.Module):
             lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
-        print(f"Input shape: {x.shape}")
+        # print(f"Input shape: {x.shape}")
 
         # Initial projection
         x = self.proj(x)
-        print(f"After projection: {x.shape}")
+        # print(f"After projection: {x.shape}")
         
         # Decoder layers
         for i, layer in enumerate(self.decoder_layers):
             x = layer(x)
-            print(f"After decoder layer {i}: {x.shape}")
+            # print(f"After decoder layer {i}: {x.shape}")
 
         # Final output layer
         output = self.final_layer(x)
-        print(f"Final output shape: {output.shape}")
+        # print(f"Final output shape: {output.shape}")
         
         return output
