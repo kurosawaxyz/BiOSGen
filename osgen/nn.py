@@ -66,15 +66,20 @@ class CrossAttentionStyleFusion(AbstractAttention):
         self, 
         latent_channels=4, 
         cond_dim=256,
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
         super().__init__()
         self.norm = nn.GroupNorm(2, latent_channels)
-        self.proj_q = lora.Conv2d(latent_channels, latent_channels, 1)
-        self.proj_k = lora.Linear(cond_dim, latent_channels)
-        self.proj_v = lora.Linear(cond_dim, latent_channels)
-        self.proj_out = lora.Conv2d(latent_channels, latent_channels, 1)
+        self.proj_q = lora.Conv2d(latent_channels, latent_channels, 1, r=lora_rank)
+        self.proj_k = lora.Linear(cond_dim, latent_channels, r=lora_rank)
+        self.proj_v = lora.Linear(cond_dim, latent_channels, r=lora_rank)
+        self.proj_out = lora.Conv2d(latent_channels, latent_channels, 1, r=lora_rank)
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
+
         
     def forward(self, x, cond):
         # x: [B, 4, H, W], cond: [B, 256]
@@ -106,6 +111,8 @@ class Upsample(nn.Module):
         in_channels: int,
         use_conv: bool = True,
         out_channels: int = None,
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -114,7 +121,9 @@ class Upsample(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels or in_channels
         if use_conv:
-            self.conv = lora.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1)
+            self.conv = lora.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1, r=lora_rank)
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
         x = F.interpolate(x, scale_factor=2, mode="nearest")
@@ -129,6 +138,8 @@ class Downsample(nn.Module):
         in_channels: int,
         use_conv: bool = True,
         out_channels: int = None,
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -143,9 +154,13 @@ class Downsample(nn.Module):
                 self.out_channels, 
                 kernel_size=3, 
                 stride=stride,
-                padding=1)
+                padding=1,
+                r=lora_rank)
         else:
             self.op = nn.AvgPool2d(kernel_size=stride, stride=stride)
+
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
         return self.op(x)
@@ -163,6 +178,8 @@ class ResBlock(nn.Module):
         use_scale_shift_norm=False,
         device=None,
         dtype=torch.float32,
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -198,7 +215,8 @@ class ResBlock(nn.Module):
                 kernel_size=3, 
                 padding=1,
                 device=self.device,
-                dtype=self.dtype
+                dtype=self.dtype,
+                r=lora_rank
             )  
         )
 
@@ -209,14 +227,18 @@ class ResBlock(nn.Module):
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype
+                dtype=self.dtype,
+                is_trainable=is_trainable,
+                lora_rank=lora_rank
             )
             self.x_upd = Upsample(
                 in_channels, 
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype
+                dtype=self.dtype,
+                is_trainable=is_trainable,
+                lora_rank=lora_rank
             )
         elif down:
             self.h_upd = Downsample(
@@ -224,14 +246,18 @@ class ResBlock(nn.Module):
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype
+                dtype=self.dtype,
+                is_trainable=is_trainable,
+                lora_rank=lora_rank
             )
             self.x_upd = Downsample(
                 in_channels, 
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype
+                dtype=self.dtype,
+                is_trainable=is_trainable,
+                lora_rank=lora_rank
             )
         else:
             self.h_upd = self.x_upd = nn.Identity()
@@ -242,7 +268,8 @@ class ResBlock(nn.Module):
                 emb_channels, 
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
                 device=self.device,
-                dtype=self.dtype
+                dtype=self.dtype,
+                r = lora_rank
             )
         )
 
@@ -261,7 +288,8 @@ class ResBlock(nn.Module):
                 kernel_size=3, 
                 padding=1,
                 device=self.device,
-                dtype=self.dtype
+                dtype=self.dtype,
+                r = lora_rank
             )
         )
 
@@ -274,8 +302,11 @@ class ResBlock(nn.Module):
                 self.out_channels, 
                 kernel_size=1,
                 device=self.device,
-                dtype=self.dtype
+                dtype=self.dtype,
+                r = lora_rank
             )
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x, emb):
         if self.updown:

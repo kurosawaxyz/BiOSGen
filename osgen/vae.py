@@ -51,6 +51,8 @@ class VAEncoder(AbstractVAE):
         pooling_layers: List[int] = [0,2],  
         activation_function: str = "relu",
         device: str = "cuda",
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -65,6 +67,8 @@ class VAEncoder(AbstractVAE):
         self.device = device
         self.pool_indices = {}  # Store pool indices for each pooling layer
         self.pool_sizes = {}    # Store sizes for unpooling operations
+        self.is_trainable = is_trainable
+        self.lora_rank = lora_rank
 
         # Check compatibility of hyperparameters
         if len(in_channels_params) != latent_channels:
@@ -76,16 +80,19 @@ class VAEncoder(AbstractVAE):
 
         # Initialize encoder layers - maintain original structure
         for i in range(self.latent_channels):
-            # Separate conv + activation from pooling to preserve structure
-            # Conv + Activation
-            conv_modules = []
-            conv_modules.append(lora.Conv2d(
+            
+            # Apply LoRA with the specified rank
+            # Create a lora Conv2d layer with specified rank
+            conv = lora.Conv2d(
                 in_channels=in_channels_params[i], 
                 out_channels=out_channels_params[i], 
                 kernel_size=kernel_params[i], 
                 stride=stride_params[i], 
-                padding=padding_params[i])
-            )
+                padding=padding_params[i],
+                r=lora_rank)  # Use the lora_rank parameter here
+            
+            conv_modules = []
+            conv_modules.append(conv)
             
             # Activation function
             if self.activation_function == "relu":
@@ -110,21 +117,26 @@ class VAEncoder(AbstractVAE):
             # Batch normalization (separate to maintain exact structure)
             setattr(self, f"bn_{i}", nn.BatchNorm2d(out_channels_params[i]))
 
-        # Convolution to reduce to latent channels (unchanged)
+        # Convolution to reduce to latent channels (with LoRA)
         self.conv_mu = lora.Conv2d(
             in_channels=out_channels_params[-1], 
             out_channels=latent_channels, 
             kernel_size=1, 
             stride=1, 
-            padding=0
+            padding=0,
+            r=lora_rank  # Use the lora_rank parameter here
         )
         self.conv_logvar = lora.Conv2d(
             in_channels=out_channels_params[-1], 
             out_channels=latent_channels, 
             kernel_size=1, 
             stride=1, 
-            padding=0
-        )
+            padding=0,
+            r=lora_rank  # Use the lora_rank parameter here
+            )
+        # Mark only LoRA parameters as trainable at the module level
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def get_mu_logvar(self, x):
         # Clear the pool indices dict each forward pass
@@ -165,6 +177,7 @@ class VAEncoder(AbstractVAE):
         return z
        
         
+# CONDITIONED VAE
 class ConditionedVAEncoder(AbstractVAE):
     def __init__(
         self, 
@@ -179,6 +192,8 @@ class ConditionedVAEncoder(AbstractVAE):
         activation_function: str = "relu",
         device: str = "cuda",
         cond_dim: int = 256,
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -193,9 +208,13 @@ class ConditionedVAEncoder(AbstractVAE):
             padding_params=padding_params,
             pooling_layers=pooling_layers,
             activation_function=activation_function,
-            device=device
+            device=device,
+            is_trainable=is_trainable,
+            lora_rank=lora_rank
         )
-        self.conditioning = CrossAttentionStyleFusion(latent_channels=latent_channels, cond_dim=cond_dim)
+        self.conditioning = CrossAttentionStyleFusion(latent_channels=latent_channels, cond_dim=cond_dim, lora_rank=lora_rank, is_trainable=is_trainable)
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
         
     def forward(self, x, condition_embedding):
         # Apply reparameterization
@@ -207,6 +226,7 @@ class ConditionedVAEncoder(AbstractVAE):
         print(f"Z shape: {z.shape}, Condition shape: {condition_embedding.shape}")
         # Apply conditioning
         conditioned_z = self.conditioning(z, condition_embedding)
+        print(f"Conditioned Z shape: {conditioned_z.shape}")
         return conditioned_z
     
 
@@ -221,6 +241,10 @@ class VAEDecoder(nn.Module):
         activation_function: str = "silu",
         # cond_dim: int = 256,
         device: str = "cuda",
+        is_trainable: bool = True,
+        lora_rank: int = 8,
+        *args,
+        **kwargs
     ):
         super(VAEDecoder, self).__init__()
         self.in_channels = in_channels
@@ -242,11 +266,11 @@ class VAEDecoder(nn.Module):
         for i in range(1, len(hidden_dims)):
             decoder_block = nn.Sequential(
                 nn.Upsample(scale_factor=2, mode="nearest"),
-                nn.Conv2d(current_dim, hidden_dims[i] // 2, kernel_size=3, padding=1),
+                lora.Conv2d(current_dim, hidden_dims[i] // 2, kernel_size=3, padding=1, r=lora_rank),
                 nn.BatchNorm2d(hidden_dims[i] // 2),
                 nn.SiLU() if activation_function == "silu" else nn.ReLU(),
                 
-                nn.Conv2d(hidden_dims[i] // 2, hidden_dims[i] // 2, kernel_size=3, padding=1),
+                lora.Conv2d(hidden_dims[i] // 2, hidden_dims[i] // 2, kernel_size=3, padding=1, r=lora_rank),
                 nn.BatchNorm2d(hidden_dims[i] // 2),
                 nn.SiLU() if activation_function == "silu" else nn.ReLU()
             )
@@ -255,12 +279,14 @@ class VAEDecoder(nn.Module):
 
         # Final output layer
         self.final_layer = nn.Sequential(
-            nn.Conv2d(current_dim, out_channels, kernel_size=3, padding=1),
+            lora.Conv2d(current_dim, out_channels, kernel_size=3, padding=1, r=lora_rank),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            lora.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, r=lora_rank),
             nn.Sigmoid(),
         )
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
         print(f"Input shape: {x.shape}")

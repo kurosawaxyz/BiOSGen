@@ -19,6 +19,10 @@ class UNetModel(nn.Module):
         num_classes=None,
         channel_mult=(1, 2, 4, 8),  # Ensure minimum downsampled size is 16x16
         conv_resample=True,
+        is_trainable: bool = True,
+        lora_rank: int = 8,
+        *args,
+        **kwargs
     ):
         super().__init__()
         self.out_channels = out_channels
@@ -33,9 +37,9 @@ class UNetModel(nn.Module):
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
-            lora.Linear(model_channels, time_embed_dim),
+            lora.Linear(model_channels, time_embed_dim, r = lora_rank),
             nn.SiLU(),
-            lora.Linear(time_embed_dim, time_embed_dim),
+            lora.Linear(time_embed_dim, time_embed_dim, r = lora_rank),
         )
 
         ch = int(channel_mult[0] * model_channels)
@@ -53,6 +57,8 @@ class UNetModel(nn.Module):
                         dropout=dropout,
                         out_channels=int(mult * model_channels),
                         use_scale_shift_norm=use_scale_shift_norm,
+                        is_trainable=is_trainable,
+                        lora_rank=lora_rank
                     )
                 ]
                 ch = int(mult * model_channels)
@@ -61,7 +67,7 @@ class UNetModel(nn.Module):
             
             if level != len(channel_mult) - 1:
                 downsample_block = nn.ModuleList([
-                    Downsample(ch, conv_resample, out_channels=ch)
+                    Downsample(ch, conv_resample, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank)
                 ])
                 self.input_blocks.append(downsample_block)
                 input_block_chans.append(ch)
@@ -74,6 +80,8 @@ class UNetModel(nn.Module):
                 dropout=dropout,
                 out_channels=ch,
                 use_scale_shift_norm=use_scale_shift_norm,
+                is_trainable=is_trainable,
+                lora_rank=lora_rank
             ),
             # ResBlock(
             #     emb_channels=time_embed_dim,
@@ -95,25 +103,30 @@ class UNetModel(nn.Module):
                         dropout=dropout,
                         out_channels=int(model_channels * mult),
                         use_scale_shift_norm=use_scale_shift_norm,
+                        is_trainable=is_trainable,
+                        lora_rank=lora_rank
                     )
                 ]
                 ch = int(model_channels * mult)
 
                 # Ensure we upsample back to 128×128
                 if level != 0 and (ch < self.model_channels * max(channel_mult)):   # Remove condition i == num_res_blocks 
-                    layers.append(Upsample(ch, conv_resample, out_channels=ch))
+                    layers.append(Upsample(ch, conv_resample, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank))
 
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
         # Ensure final resolution is 128×128
-        self.final_upsample = Upsample(ch, conv_resample, out_channels=ch)
+        self.final_upsample = Upsample(ch, conv_resample, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank)
 
         
         self.out = nn.Sequential(
             nn.BatchNorm2d(ch),
             nn.SiLU(),
-            lora.Conv2d(ch, out_channels, kernel_size=3, padding=1),
+            lora.Conv2d(ch, out_channels, kernel_size=3, padding=1, r=lora_rank),
         )
+
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x, timesteps, y=None):
         assert (y is not None) == (self.num_classes is not None)

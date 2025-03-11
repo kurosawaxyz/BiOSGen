@@ -3,7 +3,9 @@ import torch.nn as nn
 from typing import Tuple
 
 from .unet import UNetModel
-from .vae import VAEncoder, VAEDecoder
+from .vae import ConditionedVAEncoder, VAEDecoder
+
+import loralib as lora
 
 class StyleTransferPipeline(nn.Module):
     """
@@ -16,9 +18,11 @@ class StyleTransferPipeline(nn.Module):
         out_channels: int = 3,
         cond_dim: int = 256,
         device: str = "cuda",
-        unet_model_channels: int = 64,
+        unet_model_channels: int = 32,
         unet_num_res_blocks: int = 2,
-        unet_channel_mult: Tuple[int, ...] = (1, 2, 4, 8),
+        unet_channel_mult: Tuple[int, ...] = (1, 2, 4),
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -26,38 +30,58 @@ class StyleTransferPipeline(nn.Module):
         self.device = device
 
         # VAE Encoder
-        self.encoder = VAEncoder(
+        # Image size of encoder input is 128x128x3
+        self.encoder = ConditionedVAEncoder(
             in_channels=in_channels,
             latent_channels=latent_channels,
             cond_dim=cond_dim,
-            device=device
+            device=device,
+            is_trainable=is_trainable,
+            lora_rank=lora_rank
         )
 
         # UNet Model
-        model_params = {
-            'out_channels': 4,
-            'model_channels': 32,
-            'num_res_blocks': 2,
-            'dropout': 0.1,
-            'in_channels': 4,
-            'image_size': 32,
-            'use_scale_shift_norm': True,
-            'resblock_updown': False,  # Disable excessive downsampling
-            'num_classes': None,
-            'channel_mult': (1, 2, 4),  # Reduce max depth
-            # 'device': torch.device('cpu'),
-            # 'dtype': torch.float32
-        }
+        # model_params = {
+        #     'out_channels': 4,
+        #     'model_channels': 32,
+        #     'num_res_blocks': 2,
+        #     'dropout': 0.1,
+        #     'in_channels': 4,
+        #     'image_size': 32,
+        #     'use_scale_shift_norm': True,
+        #     'resblock_updown': False,  # Disable excessive downsampling
+        #     'num_classes': None,
+        #     'channel_mult': (1, 2, 4),  # Reduce max depth
+        #     # 'device': torch.device('cpu'),
+        #     # 'dtype': torch.float32
+        # }
 
-        self.unet = UNetModel(**model_params)
+        self.unet = UNetModel(
+            out_channels=latent_channels,
+            model_channels=unet_model_channels,
+            num_res_blocks=unet_num_res_blocks,
+            dropout=0.1,
+            in_channels=latent_channels,
+            image_size=32,              # Image size of encoder output is 32x32x3
+            use_scale_shift_norm=True,
+            resblock_updown=False,
+            num_classes=None,
+            channel_mult=unet_channel_mult,
+            is_trainable=is_trainable,
+            lora_rank=lora_rank
+        )
 
         # VAE Decoder
         self.decoder = VAEDecoder(
             in_channels=latent_channels,
             out_channels=out_channels,
             hidden_dims=[64, 128, 256, 512],
-            device=device
+            device=device,
+            is_trainable=is_trainable,
+            lora_rank=lora_rank
         )
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(
         self, 
@@ -75,7 +99,7 @@ class StyleTransferPipeline(nn.Module):
             Styled output image of shape [batch_size, 3, H, W]
         """
         # Encode input to latent space
-        latent = self.encoder(x)
+        latent = self.encoder(x, style_condition)
 
         print("\nVAE Encoder Output Shape:", latent.shape,"\n")
         

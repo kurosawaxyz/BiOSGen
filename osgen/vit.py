@@ -36,7 +36,7 @@ class VisionLanguageProjector(nn.Module):
             lora.Linear(input_dim * 2, output_dim, r=lora_rank),
         )
         if is_trainable:
-            lora.mark_only_lora_as_trainable(self.mlp)
+            lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
         x = self.mlp(x)
