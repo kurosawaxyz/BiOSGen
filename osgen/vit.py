@@ -22,6 +22,8 @@ class VisionLanguageProjector(nn.Module):
         input_dim: int = 512,
         output_dim: int = 256,
         device: str = "cuda",
+        is_trainable: bool = True,
+        lora_rank: int = 8,
         *args,
         **kwargs
     ):
@@ -29,10 +31,12 @@ class VisionLanguageProjector(nn.Module):
         self.device = device
 
         self.mlp = nn.Sequential(
-            lora.Linear(input_dim, input_dim * 2),
+            lora.Linear(input_dim, input_dim * 2, r=lora_rank),
             nn.ReLU(),
-            lora.Linear(input_dim * 2, output_dim),
+            lora.Linear(input_dim * 2, output_dim, r=lora_rank),
         )
+        if is_trainable:
+            lora.mark_only_lora_as_trainable(self.mlp)
 
     def forward(self, x):
         x = self.mlp(x)
@@ -65,7 +69,7 @@ def extract_style_embedding(
 
     ------------------------------------------------------------------------------
     Args:
-        image_path (str): Path to the image
+        image_array (torch.Tensor): torch Tensor of shape (C, H, W) representing the image
         show (bool): Whether to display the style embedding as an image
         device (str): Device to run the model on
     Output: 
