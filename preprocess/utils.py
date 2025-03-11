@@ -105,5 +105,7 @@ def normalize_patch(image):
     return norm_img
 
 def convert_patch_to_tensor(patch: np.ndarray) -> torch.Tensor:
-    patch = torch.tensor(patch).permute(2, 0, 1).unsqueeze(0).float()
+    # use for DataLoader
+    # patch size: (N, H, W, C)
+    patch = torch.tensor(patch).permute(0, 3, 1, 2).float()
     return patch

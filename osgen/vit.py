@@ -77,7 +77,7 @@ def extract_style_embedding(
     """
     model, preprocess = load_clip(device)
 
-    style_image = Image.fromarray(image_array.permute(1, 2, 0).numpy().astype('uint8')).convert("RGB")
+    style_image = Image.fromarray(image_array).convert("RGB")
     style_tensor = preprocess(style_image).unsqueeze(0).to(device)
     # Extract features using CLIP image encoder
     with torch.no_grad():
