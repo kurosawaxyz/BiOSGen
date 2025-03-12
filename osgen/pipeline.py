@@ -23,6 +23,7 @@ class StyleTransferPipeline(nn.Module):
         unet_channel_mult: Tuple[int, ...] = (1, 2, 4),
         is_trainable: bool = True,
         lora_rank: int = 8,
+        use_conv: bool = False,
         *args,
         **kwargs
     ):
@@ -40,22 +41,6 @@ class StyleTransferPipeline(nn.Module):
             lora_rank=lora_rank
         )
 
-        # UNet Model
-        # model_params = {
-        #     'out_channels': 4,
-        #     'model_channels': 32,
-        #     'num_res_blocks': 2,
-        #     'dropout': 0.1,
-        #     'in_channels': 4,
-        #     'image_size': 32,
-        #     'use_scale_shift_norm': True,
-        #     'resblock_updown': False,  # Disable excessive downsampling
-        #     'num_classes': None,
-        #     'channel_mult': (1, 2, 4),  # Reduce max depth
-        #     # 'device': torch.device('cpu'),
-        #     # 'dtype': torch.float32
-        # }
-
         self.unet = UNetModel(
             out_channels=latent_channels,
             model_channels=unet_model_channels,
@@ -68,7 +53,8 @@ class StyleTransferPipeline(nn.Module):
             num_classes=None,
             channel_mult=unet_channel_mult,
             is_trainable=is_trainable,
-            lora_rank=lora_rank
+            lora_rank=lora_rank,
+            use_conv=use_conv
         )
 
         # VAE Decoder
@@ -112,3 +98,9 @@ class StyleTransferPipeline(nn.Module):
         # print("\nOutput Shape:", output.shape,"\n")
         
         return output
+    
+    def count_trainable_params(self):
+        print("Encoder Trainable Params:", self.encoder.count_trainable_params())
+        print("UNet Trainable Params:", self.unet.count_trainable_params())
+        print("Decoder Trainable Params:", self.decoder.count_trainable_params())
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)

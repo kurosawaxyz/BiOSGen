@@ -1,20 +1,16 @@
+# Basic default parameters
 device: "cpu"
 savefig: False
+is_trainable: True
+lora_rank: 8
+show: False
+savefig: False
 
-VAEncoder:
-  in_channels: 3
-  latent_channels: 4
-  in_channels_params: [3, 96, 128, 192]
-  out_channels_params: [96, 128, 192,256]
-  kernel_params: [5, 3, 3, 3]
-  pooling_layers: [2, 4]
-  activation_function: "relu"
-
-Attention:
-  latent_channels: 4
-  cond_dim: 256
-
+# Image parameters
 Image:
+  default_size: 128
+  default_channels: 3
+
   tissue_mask_params: 
     kernel_size: 20
     sigma: 20
@@ -25,3 +21,86 @@ Image:
     patch_size: 128
     patch_tissue_threshold: 0.7
     is_visualize: False
+
+# ViT
+ViT:
+  input_dim: 512
+  output_dim: 256
+
+# VAE
+VAEncoder:
+  in_channels: 3
+  latent_channels: 4
+  in_channels_params: [3, 96, 128, 192]
+  out_channels_params: [96, 128, 192,256]
+  kernel_params: [3, 3, 3, 3]
+  stride_params: [1, 1, 1, 1]
+  padding_params: [1, 1, 1, 1]
+  pooling_layers: [0,2]
+  activation_function: "relu"
+
+ConditionedVAEncoder:
+  in_channels: 4
+  latent_channels: 4
+  in_channels_params: [4, 96, 128, 192]
+  out_channels_params: [96, 128, 192,256]
+  kernel_params: [3, 3, 3, 3]
+  stride_params: [1, 1, 1, 1]
+  padding_params: [1, 1, 1, 1]
+  pooling_layers: [0,2]
+  activation_function: "relu"
+  cond_dim: 256
+
+
+VAEDecoder: 
+  in_channels: 4
+  latent_channels: 3
+  hidden_dims: [64, 128, 256, 512]
+  activation_function: "silu"
+
+
+CrossAttentionStyleFusion:
+  latent_channels: 4
+  cond_dim: 256
+
+
+# UNet parameters
+UNet:
+  in_channels: 4
+  image_size: 128
+  use_scale_shift_norm: False
+  resblock_updown: False
+  num_classes: None
+  channel_mult: (1, 2, 4, 8)
+  conv_resample: True
+  dropout: 0.5
+
+# Upsample
+Upsample:
+  use_conv: True
+  out_channels: None
+
+# Downsample
+Downsample:
+  use_conv: True
+  out_channels: None
+
+# ResBlock
+ResBlock:   
+  in_channels: 4
+  use_conv: False
+  out_channels: None
+  up: False
+  down: False
+  use_scale_shift_norm: False
+
+# Pipeline
+Pipeline: 
+  in_channels: 3
+  latent_channels: 4
+  out_channels: 3
+  cond_dim: 256
+  unet_model_channels: 32
+  unet_num_res_blocks: 2
+  unet_channel_mult: (1, 2, 4)
+  use_conv: False

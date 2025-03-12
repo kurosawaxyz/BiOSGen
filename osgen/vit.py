@@ -35,12 +35,17 @@ class VisionLanguageProjector(nn.Module):
             nn.ReLU(),
             lora.Linear(input_dim * 2, output_dim, r=lora_rank),
         )
+        # Train all parameters !
         if is_trainable:
-            lora.mark_only_lora_as_trainable(self, bias='lora_only')
+            self.mlp.train()
+        # if is_trainable:
+        #     lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
         x = self.mlp(x)
         return x
+    def count_trainable_params(self):
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
 # Utils function

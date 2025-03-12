@@ -32,6 +32,9 @@ class AbstractVAE(nn.Module, ABC):
             Dictionary mapping layer indices to pre-pooling tensor sizes
         """
         return self.pool_sizes
+    
+    def count_trainable_params(self):
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 
 class VAEncoder(AbstractVAE):
@@ -175,8 +178,8 @@ class VAEncoder(AbstractVAE):
         eps = torch.randn_like(std)
         z = mu + eps * std
         return z
-       
-        
+    
+
 # CONDITIONED VAE
 class ConditionedVAEncoder(AbstractVAE):
     def __init__(
@@ -232,7 +235,7 @@ class ConditionedVAEncoder(AbstractVAE):
 
 
 # DECODER
-class VAEDecoder(nn.Module):
+class VAEDecoder(AbstractVAE):
     def __init__(
         self, 
         in_channels: int = 4,

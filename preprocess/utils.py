@@ -94,8 +94,8 @@ def get_image_patches(
         
     return patches
 
-def resize_patch(image):
-    img = cv2.resize(image, (32, 32))
+def resize_patch(image, image_size=128):
+    img = cv2.resize(image, (image_size, image_size))
     return img
 
 def normalize_patch(image):
