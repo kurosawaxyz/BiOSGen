@@ -39,3 +39,8 @@ class PatchDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.batch[idx], self.patches_dst[np.random.randint(len(self.patches_dst))]        
+    
+class PatchDataLoader(DataLoader):
+    def __init__(self, path_src, path_dst, tissue_mask_params, patch_extraction_params, batch_size):
+        dataset = PatchDataset(path_src, path_dst, tissue_mask_params, patch_extraction_params, batch_size)
+        super().__init__(dataset, batch_size=batch_size)

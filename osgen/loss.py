@@ -8,6 +8,10 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     Compute a loss that encourages structural preservation between the original and generated images.
     This uses a combination of MSE for low-level features and edge similarity.
     """
+    if original_image.shape != generated_image.shape:
+        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
 
     # 1. MSE for pixel-level preservation
     mse_loss = F.mse_loss(generated_image, original_image)
@@ -50,6 +54,10 @@ def color_alignment_loss(original_image, generated_image, bins=256, lambda_color
     Returns:
     - The computed color alignment loss.
     """
+    if original_image.shape != generated_image.shape:
+        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
     # Ensure images are in the range [0, 1]
     original_image = original_image.clamp(0, 1)
     generated_image = generated_image.clamp(0, 1)
@@ -90,6 +98,10 @@ def content_loss(original_image, generated_image, lambda_content=1.0):
     Compute content loss between original and generated images using VGG-19.
     Ensures the generated image retains high-level structures from the original.
     """
+    if original_image.shape != generated_image.shape:
+        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
     content_layers = ["21"]  # Use ReLU4_2 layer (high-level features)
     orig_features = extract_features(original_image, vgg, content_layers)
     gen_features = extract_features(generated_image, vgg, content_layers)
@@ -111,6 +123,10 @@ def style_loss(original_image, generated_image, lambda_style=1.0):
     Compute style loss between original and generated images.
     Uses Gram matrices to compare feature correlations.
     """
+    if original_image.shape != generated_image.shape:
+        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
     style_layers = ["0", "5", "10", "19", "28"]  # VGG19 ReLU layers for style
     orig_features = extract_features(original_image, vgg, style_layers)
     gen_features = extract_features(generated_image, vgg, style_layers)
