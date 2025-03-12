@@ -60,3 +60,5 @@ As you can't access to several `conda` packages in miniforge, you will not be en
 ```bash
 conda env create -f environment.yml -k
 ```
+
+## Data installation

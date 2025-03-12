@@ -1,0 +1,7 @@
+batch_size: 3 
+learning_rate: 0.001
+
+alpha_content: 10**-3
+alpha_style: 10**-8
+alpha_structure: 2*10**-4
+alpha_ca: 10**-4

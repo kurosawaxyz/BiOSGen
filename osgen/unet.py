@@ -59,7 +59,7 @@ class UNetModel(nn.Module):
                         use_scale_shift_norm=use_scale_shift_norm,
                         is_trainable=is_trainable,
                         lora_rank=lora_rank,
-                        use_conv=use_conv
+                        use_conv=use_conv  # Keep original use_conv for downsampling path
                     )
                 ]
                 ch = int(mult * model_channels)
@@ -83,7 +83,7 @@ class UNetModel(nn.Module):
                 use_scale_shift_norm=use_scale_shift_norm,
                 is_trainable=is_trainable,
                 lora_rank=lora_rank,
-                use_conv=use_conv
+                use_conv=use_conv  # Set to use_conv (not negated) for middle block
             )
         )
         
@@ -100,20 +100,21 @@ class UNetModel(nn.Module):
                         use_scale_shift_norm=use_scale_shift_norm,
                         is_trainable=is_trainable,
                         lora_rank=lora_rank,
-                        use_conv=False
+                        use_conv=use_conv  # Set to use_conv (not negated) for upsampling path
                     )
                 ]
                 ch = int(model_channels * mult)
 
-                # Ensure we upsample back to 128×128
-                if level != 0 and (ch < self.model_channels * max(channel_mult)):   # Remove condition i == num_res_blocks 
+                # Only upsample at specific levels to reach 128×128
+                if level != 0 and i == num_res_blocks:  # Restore the condition i == num_res_blocks
+                    # Control upsampling to ensure we reach 128×128
+                    # We want to upsample exactly enough to reach our target size
                     layers.append(Upsample(ch, use_conv, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank))
 
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
-        # Ensure final resolution is 128×128
-        self.final_upsample = Upsample(ch, use_conv, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank)
-
+        # Remove the final_upsample to prevent over-upsampling
+        # self.final_upsample = Upsample(ch, not use_conv, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank)
         
         self.out = nn.Sequential(
             nn.BatchNorm2d(ch),
@@ -156,6 +157,8 @@ class UNetModel(nn.Module):
             for layer in module:
                 h = layer(h) if not isinstance(layer, ResBlock) else layer(h, emb)
 
+        # Remove this line since we removed the final_upsample
+        # h = self.final_upsample(h)
         
         return self.out(h)
     

@@ -145,8 +145,8 @@ def safe_loss(loss_value):
     return torch.nan_to_num(loss_value, nan=0.0, posinf=0.0, neginf=0.0)
 
 def total_loss(original_image, generated_image, 
-               lambda_structure=1.0, lambda_color=1.0, 
-               lambda_content=1.0, lambda_style=1.0, image_size=128):
+               lambda_structure=2*10**-4, lambda_color=10**-4, 
+               lambda_content=10**-3, lambda_style=10**-8, image_size=128):
     """
     Compute the total loss by combining:
     - Structure Preservation Loss
