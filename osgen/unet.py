@@ -20,7 +20,7 @@ class UNetModel(nn.Module):
         channel_mult=(1, 2, 4, 8),  # Ensure minimum downsampled size is 16x16
         use_conv=True,
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):

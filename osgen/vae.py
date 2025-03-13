@@ -55,7 +55,7 @@ class VAEncoder(AbstractVAE):
         activation_function: str = "relu",
         device: str = "cuda",
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -196,7 +196,7 @@ class ConditionedVAEncoder(AbstractVAE):
         device: str = "cuda",
         cond_dim: int = 256,
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -245,7 +245,7 @@ class VAEDecoder(AbstractVAE):
         # cond_dim: int = 256,
         device: str = "cuda",
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):

@@ -67,7 +67,7 @@ class CrossAttentionStyleFusion(AbstractAttention):
         latent_channels=4, 
         cond_dim=256,
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -112,7 +112,7 @@ class Upsample(nn.Module):
         use_conv: bool = True,
         out_channels: int = None,
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -139,7 +139,7 @@ class Downsample(nn.Module):
         use_conv: bool = True,
         out_channels: int = None,
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -179,7 +179,7 @@ class ResBlock(nn.Module):
         device=None,
         dtype=torch.float32,
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):

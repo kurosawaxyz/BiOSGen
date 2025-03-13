@@ -23,7 +23,7 @@ class VisionLanguageProjector(nn.Module):
         output_dim: int = 256,
         device: str = "cuda",
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         *args,
         **kwargs
     ):

@@ -22,7 +22,7 @@ class StyleTransferPipeline(nn.Module):
         unet_num_res_blocks: int = 2,
         unet_channel_mult: Tuple[int, ...] = (1, 2, 4),
         is_trainable: bool = True,
-        lora_rank: int = 8,
+        lora_rank: int = 16,
         use_conv: bool = False,
         *args,
         **kwargs
