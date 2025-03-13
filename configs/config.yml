@@ -4,7 +4,6 @@ savefig: False
 is_trainable: True
 lora_rank: 8
 show: False
-savefig: False
 
 # Image parameters
 Image:

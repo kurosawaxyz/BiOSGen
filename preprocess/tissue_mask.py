@@ -128,9 +128,9 @@ class GaussianTissueMask:
         height, width = image.shape[0], image.shape[1]
         new_height = math.floor(height / downsampling_factor)
         new_width = math.floor(width / downsampling_factor)
-        print(f"Original size: {width}x{height}")
-        print(f"Downsampling factor: {downsampling_factor}")
-        print(f"New size: {new_width}x{new_height}")
+        # print(f"Original size: {width}x{height}")
+        # print(f"Downsampling factor: {downsampling_factor}")
+        # print(f"New size: {new_width}x{new_height}")
 
         downsampled_image = cv2.resize(
             image, (new_width, new_height), interpolation=cv2.INTER_NEAREST

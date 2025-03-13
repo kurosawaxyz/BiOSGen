@@ -61,7 +61,7 @@ class StyleTransferPipeline(nn.Module):
         self.decoder = VAEDecoder(
             in_channels=latent_channels,
             out_channels=out_channels,
-            hidden_dims=[64, 128, 256, 512],
+            hidden_dims=[64, 128, 256],
             device=device,
             is_trainable=is_trainable,
             lora_rank=lora_rank

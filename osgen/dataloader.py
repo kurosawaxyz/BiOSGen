@@ -117,20 +117,3 @@ class PatchDataLoader:
             path_src, path_dst, tissue_mask_params, patch_extraction_params, 
             split='test', val_ratio=val_ratio, test_ratio=test_ratio, seed=seed
         )
-        
-        self.train_loader = DataLoader(
-            self.train_dataset, batch_size=batch_size, shuffle=True, num_workers=4
-        )
-        self.val_loader = DataLoader(
-            self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=4
-        )
-        self.test_loader = DataLoader(
-            self.test_dataset, batch_size=batch_size, shuffle=False, num_workers=4
-        )
-    
-    def get_loaders(self):
-        return {
-            'train': self.train_loader,
-            'val': self.val_loader,
-            'test': self.test_loader
-        }

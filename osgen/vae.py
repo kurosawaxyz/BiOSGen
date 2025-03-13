@@ -240,7 +240,7 @@ class VAEDecoder(AbstractVAE):
         self, 
         in_channels: int = 4,
         out_channels: int = 3,
-        hidden_dims: list = [64, 128],
+        hidden_dims: list = [64, 128, 256],
         activation_function: str = "silu",
         # cond_dim: int = 256,
         device: str = "cuda",
@@ -292,16 +292,18 @@ class VAEDecoder(AbstractVAE):
             lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, x):
+        # print("decoding")
         # print(f"Input shape: {x.shape}")
 
         # Initial projection
         x = self.proj(x)
-        # print(f"After projection: {x.shape}")
+        # print(f"After projection: {x.shape}\n")
         
         # Decoder layers
         for i, layer in enumerate(self.decoder_layers):
             x = layer(x)
             # print(f"After decoder layer {i}: {x.shape}")
+        # print()
 
         # Final output layer
         output = self.final_layer(x)

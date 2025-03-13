@@ -1,7 +1,12 @@
+device: 'cpu'
+
 batch_size: 3 
 learning_rate: 0.001
+num_epochs: 100
+gradient_clip_val: 1.0
 
-alpha_content: 10**-3
-alpha_style: 10**-8
-alpha_structure: 2*10**-4
-alpha_ca: 10**-4
+loss_alpha:
+  alpha_content: 10**-7
+  alpha_style: 10**-8
+  alpha_structure: 2*10**-5
+  alpha_ca: 10**-7

@@ -28,6 +28,7 @@ dependencies:
       - loralib
       - peft
       - thop
+      - omegaconf
 
   - conda:
     - libvips

@@ -9,7 +9,7 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     This uses a combination of MSE for low-level features and edge similarity.
     """
     if original_image.shape != generated_image.shape:
-        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        # print("Original and generated images have different shapes. Resizing generated image to match original image.")
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
 
@@ -55,7 +55,7 @@ def color_alignment_loss(original_image, generated_image, bins=256, lambda_color
     - The computed color alignment loss.
     """
     if original_image.shape != generated_image.shape:
-        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        # print("Original and generated images have different shapes. Resizing generated image to match original image.")
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
     # Ensure images are in the range [0, 1]
@@ -99,7 +99,7 @@ def content_loss(original_image, generated_image, lambda_content=1.0):
     Ensures the generated image retains high-level structures from the original.
     """
     if original_image.shape != generated_image.shape:
-        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        # print("Original and generated images have different shapes. Resizing generated image to match original image.")
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
     content_layers = ["21"]  # Use ReLU4_2 layer (high-level features)
@@ -124,7 +124,7 @@ def style_loss(original_image, generated_image, lambda_style=1.0):
     Uses Gram matrices to compare feature correlations.
     """
     if original_image.shape != generated_image.shape:
-        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        # print("Original and generated images have different shapes. Resizing generated image to match original image.")
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
     style_layers = ["0", "5", "10", "19", "28"]  # VGG19 ReLU layers for style
@@ -146,7 +146,7 @@ def safe_loss(loss_value):
 
 def total_loss(original_image, generated_image, 
                lambda_structure=2*10**-4, lambda_color=10**-4, 
-               lambda_content=10**-3, lambda_style=10**-8, image_size=128):
+               lambda_content=10**-3, lambda_style=10**-8, image_size=128, verbose=False):
     """
     Compute the total loss by combining:
     - Structure Preservation Loss
@@ -155,7 +155,7 @@ def total_loss(original_image, generated_image,
     - Style Loss
     """
     if original_image.shape != generated_image.shape:
-        print("Original and generated images have different shapes. Resizing generated image to match original image.")
+        # print("Original and generated images have different shapes. Resizing generated image to match original image.")
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
     # Size of original image: [B, C, H, W]
@@ -164,10 +164,11 @@ def total_loss(original_image, generated_image,
     color_loss_value = safe_loss(color_alignment_loss(original_image, generated_image, image_size, lambda_color))
     content_loss_value = safe_loss(content_loss(original_image, generated_image, lambda_content))
     style_loss_value = safe_loss(style_loss(original_image, generated_image, lambda_style))
-    print("Structure Loss:", structure_loss_value.item())
-    print("Color Loss:", color_loss_value.item())
-    print("Content Loss:", content_loss_value.item())
-    print("Style Loss:", style_loss_value.item())
+    if verbose:
+        print("Structure Loss:", structure_loss_value.item())
+        print("Color Loss:", color_loss_value.item())
+        print("Content Loss:", content_loss_value.item())
+        print("Style Loss:", style_loss_value.item())
 
     total = structure_loss_value + color_loss_value + content_loss_value + style_loss_value
     return total
