@@ -37,9 +37,9 @@ class UNetModel(nn.Module):
 
         time_embed_dim = model_channels * 4
         self.time_embed = nn.Sequential(
-            lora.Linear(model_channels, time_embed_dim, r = lora_rank),
+            lora.Linear(model_channels, time_embed_dim),
             nn.SiLU(),
-            lora.Linear(time_embed_dim, time_embed_dim, r = lora_rank),
+            lora.Linear(time_embed_dim, time_embed_dim),
         )
 
         ch = int(channel_mult[0] * model_channels)
@@ -57,9 +57,6 @@ class UNetModel(nn.Module):
                         dropout=dropout,
                         out_channels=int(mult * model_channels),
                         use_scale_shift_norm=use_scale_shift_norm,
-                        is_trainable=is_trainable,
-                        lora_rank=lora_rank,
-                        use_conv=use_conv  # Keep original use_conv for downsampling path
                     )
                 ]
                 ch = int(mult * model_channels)
@@ -68,7 +65,7 @@ class UNetModel(nn.Module):
             
             if level != len(channel_mult) - 1:
                 downsample_block = nn.ModuleList([
-                    Downsample(ch, use_conv, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank)
+                    Downsample(ch, use_conv, out_channels=ch)
                 ])
                 self.input_blocks.append(downsample_block)
                 input_block_chans.append(ch)
@@ -81,10 +78,14 @@ class UNetModel(nn.Module):
                 dropout=dropout,
                 out_channels=ch,
                 use_scale_shift_norm=use_scale_shift_norm,
-                is_trainable=is_trainable,
-                lora_rank=lora_rank,
-                use_conv=use_conv  # Set to use_conv (not negated) for middle block
-            )
+            ),
+            # ResBlock(
+            #     emb_channels=time_embed_dim,
+            #     in_channels=ch,
+            #     dropout=dropout,
+            #     out_channels=ch,
+            #     use_scale_shift_norm=use_scale_shift_norm,
+            # ),
         )
         
         self.output_blocks = nn.ModuleList([])
@@ -98,28 +99,25 @@ class UNetModel(nn.Module):
                         dropout=dropout,
                         out_channels=int(model_channels * mult),
                         use_scale_shift_norm=use_scale_shift_norm,
-                        is_trainable=is_trainable,
-                        lora_rank=lora_rank,
-                        use_conv=use_conv  # Set to use_conv (not negated) for upsampling path
+                        use_conv=True
                     )
                 ]
                 ch = int(model_channels * mult)
 
-                # Only upsample at specific levels to reach 128×128
-                if level != 0 and i == num_res_blocks:  # Restore the condition i == num_res_blocks
-                    # Control upsampling to ensure we reach 128×128
-                    # We want to upsample exactly enough to reach our target size
-                    layers.append(Upsample(ch, use_conv, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank))
+                # Ensure we upsample back to 128×128
+                if level != 0 and (ch < self.model_channels * max(channel_mult)):   # Remove condition i == num_res_blocks 
+                    layers.append(Upsample(ch, use_conv, out_channels=ch))
 
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
 
-        # Remove the final_upsample to prevent over-upsampling
-        # self.final_upsample = Upsample(ch, not use_conv, out_channels=ch, is_trainable=is_trainable, lora_rank=lora_rank)
+        # Ensure final resolution is 128×128
+        self.final_upsample = Upsample(ch, use_conv, out_channels=ch)
+
         
         self.out = nn.Sequential(
             nn.BatchNorm2d(ch),
             nn.SiLU(),
-            lora.Conv2d(ch, out_channels, kernel_size=3, padding=1, r=lora_rank),
+            lora.Conv2d(ch, out_channels, kernel_size=3, padding=1),
         )
 
         if is_trainable:
@@ -157,8 +155,6 @@ class UNetModel(nn.Module):
             for layer in module:
                 h = layer(h) if not isinstance(layer, ResBlock) else layer(h, emb)
 
-        # Remove this line since we removed the final_upsample
-        # h = self.final_upsample(h)
         
         return self.out(h)
     

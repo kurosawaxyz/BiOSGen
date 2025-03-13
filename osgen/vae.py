@@ -240,7 +240,7 @@ class VAEDecoder(AbstractVAE):
         self, 
         in_channels: int = 4,
         out_channels: int = 3,
-        hidden_dims: list = [64, 128, 256, 512],
+        hidden_dims: list = [64, 128],
         activation_function: str = "silu",
         # cond_dim: int = 256,
         device: str = "cuda",
