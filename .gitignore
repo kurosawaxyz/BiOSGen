@@ -10,3 +10,5 @@ __pycache__/
 *.pt
 evaluation_results/
 results/
+train_results/
+test_results/
