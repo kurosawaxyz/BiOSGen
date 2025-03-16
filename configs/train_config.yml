@@ -15,3 +15,18 @@ optimizer:      # Adam as default
   lr: 1e-4
   weight_decay: 1e-6
   
+# Image parameters
+Image:
+  default_size: 128
+  default_channels: 3
+
+  tissue_mask_params: 
+    kernel_size: 20
+    sigma: 20
+    downsample: 8
+    background_gray_threshold: 220
+
+  patch_extraction_params:
+    patch_size: 128
+    patch_tissue_threshold: 0.7
+    is_visualize: False
