@@ -281,13 +281,13 @@ if __name__ == "__main__":
     # Plot losses
     plt.figure(figsize=(12, 6))
     plt.plot(losses, label='Loss')
-    plt.plot(avg_epoch_loss, label='Avg. Epoch Loss', color='red', linewidth=2)
+    plt.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
     plt.title('Training Loss')
     plt.xlabel('Batch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.show()
     plt.savefig(f"{output_dir}/losses.png")
+    # plt.show()
 
     # Terminal execution
     # python -m bin.train --config_path /Users/hoangthuyduongvu/Desktop/BiOSGen/configs/train_config.yml --style_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/NKX3/A3_TMA_15_02_IIB_NKX.png --original_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/HE/A3_TMA_15_02_IVB_HE.png
