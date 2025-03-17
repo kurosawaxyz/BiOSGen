@@ -122,6 +122,11 @@ if __name__ == "__main__":
     grad_clip_thresholds = {}
 
     losses = []
+    style_losses = []
+    content_losses = []
+    structure_losses = []
+    ca_losses = []
+
     running_avg_loss = 0
 
     num_epochs = cfg.num_epochs
@@ -279,6 +284,11 @@ if __name__ == "__main__":
             
             # Update statistics
             losses.append(loss.item())
+            structure_losses.append(structure_l.item())
+            ca_losses.append(ca_l.item())
+            content_losses.append(content_l.item())
+            style_losses.append(style_l.item())
+
             epoch_loss += loss.item()
             num_batches += 1
             
@@ -337,13 +347,13 @@ if __name__ == "__main__":
     # Create figure with GridSpec
     fig, ax = plt.subplots(3, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 1, 2]})
     # Plot the first four graphs
-    ax[0, 0].plot(structure_l)
+    ax[0, 0].plot(structure_losses)
     ax[0, 0].set_title("Structure Loss")
-    ax[0, 1].plot(ca_l)
+    ax[0, 1].plot(ca_losses)
     ax[0, 1].set_title("Color Alignment Loss")
-    ax[1, 0].plot(content_l)
+    ax[1, 0].plot(content_losses)
     ax[1, 0].set_title("Content Loss")
-    ax[1, 1].plot(style_l)
+    ax[1, 1].plot(style_losses)
     ax[1, 1].set_title("Style Loss")
     
     # Remove unused axes in the last row
@@ -352,7 +362,7 @@ if __name__ == "__main__":
 
     # Add last graph spanning both columns
     big_ax = fig.add_subplot(3, 1, 3)
-    big_ax.plot(losses)
+    big_ax.plot(losses)             # losses is a list -> no need to convert to numpy array
     big_ax.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
     big_ax.set_xlabel("Num_epochs")
     big_ax.set_ylabel("Loss")
