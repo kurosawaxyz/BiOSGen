@@ -64,7 +64,7 @@ conda env create -f environment.yml -k
 ```
 
 ### Data installation
->**Note**: Data installation instruction for the EMPaCT dataset provided by [AI4SCR/VirtualMultiplexer](https://github.com/AI4SCR/VirtualMultiplexer)
+>**Note**: Data installation instruction for the EMPaCT dataset provided by [AI4SCR](https://github.com/AI4SCR/VirtualMultiplexer)
 #### Downloading the EMPaCT dataset 
 
 European Multicenter Prostate Cancer Clinical and Translational Research Group (EMPaCT) [[1](https://www.sciencedirect.com/science/article/pii/S0022534712029710), [2](https://www.sciencedirect.com/science/article/pii/S2405456917300020), [3](https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2020.00246/full)] contains prostate cancer tissue microarrays (TMAs) from 210 patients with 4 cores per patient for several clinically relevant markers.
