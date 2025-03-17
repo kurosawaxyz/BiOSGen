@@ -286,7 +286,7 @@ if __name__ == "__main__":
     plt.xlabel('Batch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.savefig(f"{output_dir}/losses.png")
+    # plt.savefig(f"{output_dir}/losses.png")
     # plt.show()
 
     # Terminal execution
