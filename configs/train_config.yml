@@ -6,10 +6,10 @@ num_epochs: 100
 gradient_clip_val: 1.0
 
 loss_alpha:
-  alpha_content: 1e-3
-  alpha_style: 1e-5
-  alpha_structure: 1e-4
-  alpha_ca: 1e-4
+  lambda_content: 1e-3
+  lambda_style: 1e-5
+  lambda_structure: 1e-4
+  lambda_ca: 1e-4
 
 optimizer:      # Adam as default
   lr: 1e-4

@@ -115,10 +115,10 @@ if __name__ == "__main__":
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
 
     # Loss scaling factors with more balanced values
-    alpha_structure = 1e-4
-    alpha_content = 1e-3
-    alpha_style = 1e-5
-    alpha_ca = 1e-4
+    lambda_structure = 1e-4
+    lambda_content = 1e-3
+    lambda_style = 1e-5
+    lambda_ca = 1e-4
     gradient_clip_val = 1.0  # More aggressive gradient clipping
 
     # Per-parameter gradient clipping threshold
@@ -169,10 +169,10 @@ if __name__ == "__main__":
                     loss = total_loss(
                         original_image=batch, 
                         generated_image=out[0].unsqueeze(0),
-                        lambda_structure=alpha_structure,
-                        lambda_content=alpha_content,
-                        lambda_style=alpha_style,
-                        lambda_color=alpha_ca
+                        lambda_structure=lambda_structure,
+                        lambda_content=lambda_content,
+                        lambda_style=lambda_style,
+                        lambda_color=lambda_ca
                     )
                 
                 # Scale loss and perform backward pass
@@ -186,10 +186,10 @@ if __name__ == "__main__":
                 loss = total_loss(
                     original_image=batch, 
                     generated_image=out[0].unsqueeze(0),
-                    lambda_structure=alpha_structure,
-                    lambda_content=alpha_content,
-                    lambda_style=alpha_style,
-                    lambda_color=alpha_ca
+                    lambda_structure=lambda_structure,
+                    lambda_content=lambda_content,
+                    lambda_style=lambda_style,
+                    lambda_color=lambda_ca
                 )
                 loss.backward()
                 # print("backward")
