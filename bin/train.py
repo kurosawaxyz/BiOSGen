@@ -1,7 +1,5 @@
 
 import torch
-import torch.nn.functional as F
-import torchvision.models as models
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import time
@@ -13,7 +11,7 @@ import os
 from osgen.pipeline import StyleTransferPipeline
 from osgen.vit import extract_style_embedding
 from osgen.dataloader import PatchDataLoader
-from osgen.loss import total_loss
+from osgen.loss import total_loss, structure_preservation_loss, color_alignment_loss, style_loss, content_loss
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -72,7 +70,6 @@ if __name__ == "__main__":
 
     # Track losses
     losses = []
-    val_losses = []
 
     # Load main configs
     tissue_mask_params = cfg.Image.tissue_mask_params
@@ -166,6 +163,29 @@ if __name__ == "__main__":
                 with torch.cuda.amp.autocast():
                     # Forward pass
                     out = model(batch, style_emb, timesteps)
+
+                    # Compute loss
+                    structure_l = structure_preservation_loss(
+                        original_image=batch, 
+                        generated_image=out[0].unsqueeze(0),
+                        lambda_structure=lambda_structure,
+                    )
+                    ca_l = color_alignment_loss(
+                        original_image=batch,
+                        generated_image=out[0].unsqueeze(0),
+                        lambda_color=lambda_ca
+                    )
+                    content_l = content_loss(
+                        original_image=batch,
+                        generated_image=out[0].unsqueeze(0),
+                        lambda_content=lambda_content
+                    )
+                    style_l = style_loss(
+                        original_image=batch,
+                        generated_image=out[0].unsqueeze(0),
+                        lambda_style=lambda_style
+                    )
+
                     loss = total_loss(
                         original_image=batch, 
                         generated_image=out[0].unsqueeze(0),
@@ -183,6 +203,29 @@ if __name__ == "__main__":
             else:
                 # Forward pass (without mixed precision)
                 out = model(batch, style_emb, timesteps)
+
+                # Compute loss
+                structure_l = structure_preservation_loss(
+                    original_image=batch, 
+                    generated_image=out[0].unsqueeze(0),
+                    lambda_structure=lambda_structure,
+                )
+                ca_l = color_alignment_loss(
+                    original_image=batch,
+                    generated_image=out[0].unsqueeze(0),
+                    lambda_color=lambda_ca
+                )
+                content_l = content_loss(
+                    original_image=batch,
+                    generated_image=out[0].unsqueeze(0),
+                    lambda_content=lambda_content
+                )
+                style_l = style_loss(
+                    original_image=batch,
+                    generated_image=out[0].unsqueeze(0),
+                    lambda_style=lambda_style
+                )
+                
                 loss = total_loss(
                     original_image=batch, 
                     generated_image=out[0].unsqueeze(0),
@@ -279,15 +322,47 @@ if __name__ == "__main__":
 
 
     # Plot losses
-    plt.figure(figsize=(12, 6))
-    plt.plot(losses, label='Loss')
-    plt.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
-    plt.title('Training Loss')
-    plt.xlabel('Batch')
-    plt.ylabel('Loss')
-    plt.legend()
+    # plt.figure(figsize=(12, 6))
+    # plt.plot(losses, label='Loss')
+    # plt.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
+    # plt.title('Training Loss')
+    # plt.xlabel('Batch')
+    # plt.ylabel('Loss')
+    # plt.legend()
     # plt.savefig(f"{output_dir}/losses.png")
     # plt.show()
+
+
+    # Plot losses 
+    # Create figure with GridSpec
+    fig, ax = plt.subplots(3, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 1, 2]})
+    # Plot the first four graphs
+    ax[0, 0].plot(structure_l)
+    ax[0, 0].set_title("Structure Loss")
+    ax[0, 1].plot(ca_l)
+    ax[0, 1].set_title("Color Alignment Loss")
+    ax[1, 0].plot(content_l)
+    ax[1, 0].set_title("Content Loss")
+    ax[1, 1].plot(style_l)
+    ax[1, 1].set_title("Style Loss")
+    
+    # Remove unused axes in the last row
+    fig.delaxes(ax[2, 0])
+    fig.delaxes(ax[2, 1])
+
+    # Add last graph spanning both columns
+    big_ax = fig.add_subplot(3, 1, 3)
+    big_ax.plot(losses)
+    big_ax.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
+    big_ax.set_xlabel("Num_epochs")
+    big_ax.set_ylabel("Loss")
+    big_ax.set_title("Graph 5 (Spanning Width)")
+
+    # Adjust layout
+    plt.tight_layout()
+    plt.show()
+
+
 
     # Terminal execution
     # python -m bin.train --config_path /Users/hoangthuyduongvu/Desktop/BiOSGen/configs/train_config.yml --style_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/NKX3/A3_TMA_15_02_IIB_NKX.png --original_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/HE/A3_TMA_15_02_IVB_HE.png
