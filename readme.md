@@ -55,9 +55,9 @@ conda env create -f environment.yml
 #### For miniforge users:
 **Warning**:
 
-You will need to remove line 4 and line 32-34 from `environment.yml` to avoid conflicts while setting up the environment using YAML file. 
+You will need to remove line 4 and lines 32-34 from `environment.yml` to avoid conflicts while setting up the environment using YAML file. 
 
-As you can't access to several `conda` packages in miniforge, you will not be enable to use Moondream model from *vikhyatk/moondream2*. However, there are alternatives such as *HuggingFaceTB/SmolVLM-Instruct*, *microsoft/OmniParser-v2.0*, etc. 
+As you can't access several `conda` packages in miniforge, you will not be able to use the Moondream model from *vikhyatk/moondream2*. However, there are alternatives such as *HuggingFaceTB/SmolVLM-Instruct*, *microsoft/OmniParser-v2.0*, etc. 
 
 ```bash
 conda env create -f environment.yml -k
