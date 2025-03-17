@@ -1,15 +1,15 @@
 device: 'cpu'
 
 batch_size: 5
-learning_rate: 1e-3
+learning_rate: 1e-8
 num_epochs: 100
 gradient_clip_val: 1.0
 
 loss_alpha:
-  lambda_content: 1e-3
+  lambda_content: 1e-6
   lambda_style: 1e-5
-  lambda_structure: 1e-4
-  lambda_ca: 1e-4
+  lambda_structure: 1e-7
+  lambda_ca: 1e-8
 
 optimizer:      # Adam as default
   lr: 1e-4
