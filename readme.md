@@ -74,7 +74,7 @@ All images from Hematoxylin & Eosin (H&E) and Immunohistochemistry (IHC) stainin
 #### Downloading Masks, Bounding Boxes and Data Splits
 
 AI4SCR uploaded the all relevant information to [Figshare]( https://figshare.com/projects/VirtualMultiplexer/230498) and 
-provide a notebook [preprocess/preprocess.ipynb](preprocess%2Fpreprocess.ipynb) to demonstrate how to process and plot the data.
+provide a notebook to demonstrate how to process and plot the data.
 
 ### To visualize training process
 ```bash
