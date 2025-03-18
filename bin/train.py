@@ -282,12 +282,12 @@ if __name__ == "__main__":
             else:
                 optimizer.step()
             
-            # Update statistics
-            losses.append(loss.item())
-            structure_losses.append(structure_l.item())
-            ca_losses.append(ca_l.item())
-            content_losses.append(content_l.item())
-            style_losses.append(style_l.item())
+            # # Update statistics
+            # losses.append(loss.item())
+            # structure_losses.append(structure_l.item())
+            # ca_losses.append(ca_l.item())
+            # content_losses.append(content_l.item())
+            # style_losses.append(style_l.item())
 
             epoch_loss += loss.item()
             num_batches += 1
@@ -318,6 +318,13 @@ if __name__ == "__main__":
         
         # Update learning rate based on loss
         scheduler.step(avg_epoch_loss)
+
+        # Update statistics
+        losses.append(loss.item())
+        structure_losses.append(structure_l.item())
+        ca_losses.append(ca_l.item())
+        content_losses.append(content_l.item())
+        style_losses.append(style_l.item())
         
         # Save checkpoint
         if (epoch + 1) % 10 == 0:
@@ -370,8 +377,9 @@ if __name__ == "__main__":
 
     # Adjust layout
     plt.tight_layout()
+    plt.title('Training Loss')
     # plt.show()
-    plt.savefig(f"{output_dir}/losses.png")
+    plt.savefig(f"{output_dir}/losses_epoch.png")
 
 
 
