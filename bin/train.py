@@ -373,7 +373,7 @@ if __name__ == "__main__":
     big_ax.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
     big_ax.set_xlabel("Num_epochs")
     big_ax.set_ylabel("Loss")
-    big_ax.set_title("Total loss")
+    # big_ax.set_title("Total loss")
 
     # Adjust layout
     plt.tight_layout()
