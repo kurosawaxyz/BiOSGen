@@ -150,8 +150,8 @@ if __name__ == "__main__":
         
         for batch_idx in tqdm(range(cfg.batch_size)):  # Keep your batch range limit for debugging
             # Get batch
-            # batch, style = data_loader.test_dataset[batch_idx]
-            batch, style = next(iter(data_loader.train_dataset))
+            batch, style = data_loader.train_dataset[batch_idx]
+            # batch, style = next(iter(data_loader.train_dataset))
             batch = batch.unsqueeze(0).to(device)
             style = style.to(device)
             
@@ -283,13 +283,6 @@ if __name__ == "__main__":
                 scaler.update()
             else:
                 optimizer.step()
-            
-            # # Update statistics
-            # losses.append(loss.item())
-            # structure_losses.append(structure_l.item())
-            # ca_losses.append(ca_l.item())
-            # content_losses.append(content_l.item())
-            # style_losses.append(style_l.item())
 
             epoch_loss += loss.item()
             num_batches += 1
@@ -316,7 +309,7 @@ if __name__ == "__main__":
         
         avg_epoch_loss = epoch_loss / num_batches
         print(f"Epoch {epoch+1} completed in {time.time() - start_time:.2f} seconds")
-        print(f"Epoch {epoch+1} loss: {avg_epoch_loss:.6f}")
+        print(f"Epoch {epoch+1} loss: {loss}, avg loss: {avg_epoch_loss:.6f}")
         
         # Update learning rate based on loss
         scheduler.step(avg_epoch_loss)
@@ -364,7 +357,6 @@ if __name__ == "__main__":
     # Add last graph spanning both columns
     big_ax = fig.add_subplot(3, 1, 3)
     big_ax.plot(losses)             # losses is a list -> no need to convert to numpy array
-    big_ax.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
     big_ax.set_xlabel("Num_epochs")
     big_ax.set_ylabel("Loss")
     # big_ax.set_title("Total loss")
