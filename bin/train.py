@@ -6,6 +6,8 @@ import time
 from tqdm import tqdm
 import numpy as np
 
+import loralib as lora
+
 import os
 
 from osgen.pipeline import StyleTransferPipeline
@@ -28,7 +30,7 @@ if __name__ == "__main__":
 
     # Load argparser
     # Create ArgumentParser object
-    parser = argparse.ArgumentParser(description="This script demonstrates argparse usage.")
+    parser = argparse.ArgumentParser(description="Argparse for training process.")
 
     # Add arguments
     parser.add_argument("--config_path", type=str, help="Configuration path", required=True)
@@ -330,25 +332,17 @@ if __name__ == "__main__":
         if (epoch + 1) % 10 == 0:
             if not os.path.exists('checkpoints'):
                 os.makedirs('checkpoints')
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': avg_epoch_loss,
-            }, f'checkpoints/checkpoint_epoch_{epoch+1}.pt')
 
-
-    # Plot losses
-    # plt.figure(figsize=(12, 6))
-    # plt.plot(losses, label='Loss')
-    # plt.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
-    # plt.title('Training Loss')
-    # plt.xlabel('Batch')
-    # plt.ylabel('Loss')
-    # plt.legend()
-    # plt.savefig(f"{output_dir}/losses.png")
-    # plt.show()
-
+            torch.save(
+                lora.lora_state_dict(model, bias='lora_only'), 
+                f'checkpoints/checkpoint_epoch_{epoch+1}.pt'
+            )
+            # torch.save({
+            #     'epoch': epoch,
+            #     'model_state_dict': model.state_dict(),
+            #     'optimizer_state_dict': optimizer.state_dict(),
+            #     'loss': avg_epoch_loss,
+            # }, f'checkpoints/checkpoint_epoch_{epoch+1}.pt')
 
     # Plot losses 
     # Create figure with GridSpec
