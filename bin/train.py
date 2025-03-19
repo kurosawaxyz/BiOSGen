@@ -150,7 +150,8 @@ if __name__ == "__main__":
         
         for batch_idx in tqdm(range(cfg.batch_size)):  # Keep your batch range limit for debugging
             # Get batch
-            batch, style = data_loader.train_dataset[batch_idx]
+            # batch, style = data_loader.train_dataset[batch_idx]
+            batch, style = data_loader.train_dataset[np.random.randint(0, len(data_loader.train_dataset))]
             # batch, style = next(iter(data_loader.train_dataset))
             batch = batch.unsqueeze(0).to(device)
             style = style.to(device)
