@@ -1,19 +1,19 @@
 device: 'cpu'
 
-batch_size: 3
-learning_rate: 1e-5
-num_epochs: 100
+batch_size: 5
+learning_rate: 1e-3
+num_epochs: 20
 gradient_clip_val: 1.0
 
 loss_alpha:
-  lambda_content: 1e-5
-  lambda_style: 1e-6
-  lambda_structure: 1e-5
-  lambda_ca: 1e-4
+  alpha_content: 1e-3
+  alpha_style: 1e-5
+  alpha_structure: 1e-4
+  alpha_ca: 1e-4
 
 optimizer:      # Adam as default
   lr: 1e-4
-  weight_decay: 1e-6
+  weight_decay: 1e-3
   
 # Image parameters
 Image:
