@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.ipynb_checkpoints/
 *.ipynb
-# assets/
+archive/
 .DS_Store
 .vscode/
 *.txt

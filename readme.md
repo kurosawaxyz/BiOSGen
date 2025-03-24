@@ -8,7 +8,7 @@ Two style transfer models were compared: one using a traditional GAN-based appro
 Future work will focus on refining the diffusion model to generate more accurate IHC images while incorporating patient-specific health factors that may influence tumor growth, progression, and treatment response.
 
 ## Model architecture
-![](assets/main%20diagram.png)
+![](assets/main.drawio.png)
 
 ## Project structure
 ```txt
@@ -37,7 +37,7 @@ BiOSGen/
 │── scripts/                
 │   ├── launch.sh      
 │── data/                   # hidden directory       
-│── assets/                 # hidden directory
+│── archive/                 # hidden directory
 │── train_results/                 # hidden directory
 │── evaluation_results/                 # hidden directory
 │── environment.yml
