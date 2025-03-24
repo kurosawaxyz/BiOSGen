@@ -36,6 +36,13 @@ BiOSGen/
 │   ├── test.py     
 │── scripts/                
 │   ├── launch.sh      
+<<<<<<< HEAD
+│── data/                   # hidden directory       
+│── archive/                 # hidden directory
+│── train_results/                 # hidden directory
+│── evaluation_results/                 # hidden directory
+=======
+>>>>>>> 999f5435c4a67aa99a2dbcc010c4769e653a35a8
 │── environment.yml
 │── README.md               
 │── .gitignore  

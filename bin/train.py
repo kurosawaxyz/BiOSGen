@@ -1,19 +1,19 @@
 
 import torch
+import torch.nn.functional as F
+import torchvision.models as models
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import time
 from tqdm import tqdm
 import numpy as np
 
-import loralib as lora
-
 import os
 
 from osgen.pipeline import StyleTransferPipeline
 from osgen.vit import extract_style_embedding
 from osgen.dataloader import PatchDataLoader
-from osgen.loss import total_loss, structure_preservation_loss, color_alignment_loss, style_loss, content_loss
+from osgen.loss import total_loss
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # Load argparser
     # Create ArgumentParser object
-    parser = argparse.ArgumentParser(description="Argparse for training process.")
+    parser = argparse.ArgumentParser(description="This script demonstrates argparse usage.")
 
     # Add arguments
     parser.add_argument("--config_path", type=str, help="Configuration path", required=True)
@@ -72,6 +72,7 @@ if __name__ == "__main__":
 
     # Track losses
     losses = []
+    val_losses = []
 
     # Load main configs
     tissue_mask_params = cfg.Image.tissue_mask_params
@@ -114,21 +115,16 @@ if __name__ == "__main__":
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
 
     # Loss scaling factors with more balanced values
-    lambda_structure = 1e-4
-    lambda_content = 1e-3
-    lambda_style = 1e-5
-    lambda_ca = 1e-4
+    alpha_structure = 1e-4
+    alpha_content = 1e-3
+    alpha_style = 1e-5
+    alpha_ca = 1e-4
     gradient_clip_val = 1.0  # More aggressive gradient clipping
 
     # Per-parameter gradient clipping threshold
     grad_clip_thresholds = {}
 
     losses = []
-    style_losses = []
-    content_losses = []
-    structure_losses = []
-    ca_losses = []
-
     running_avg_loss = 0
 
     num_epochs = cfg.num_epochs
@@ -150,7 +146,7 @@ if __name__ == "__main__":
         
         for batch_idx in tqdm(range(cfg.batch_size)):  # Keep your batch range limit for debugging
             # Get batch
-            # batch, style = data_loader.train_dataset[batch_idx]
+            # batch, style = data_loader.test_dataset[batch_idx]
             batch, style = next(iter(data_loader.train_dataset))
             batch = batch.unsqueeze(0).to(device)
             style = style.to(device)
@@ -170,36 +166,13 @@ if __name__ == "__main__":
                 with torch.cuda.amp.autocast():
                     # Forward pass
                     out = model(batch, style_emb, timesteps)
-
-                    # Compute loss
-                    structure_l = structure_preservation_loss(
-                        original_image=batch, 
-                        generated_image=out[0].unsqueeze(0),
-                        lambda_structure=lambda_structure,
-                    )
-                    ca_l = color_alignment_loss(
-                        original_image=batch,
-                        generated_image=out[0].unsqueeze(0),
-                        lambda_color=lambda_ca
-                    )
-                    content_l = content_loss(
-                        original_image=batch,
-                        generated_image=out[0].unsqueeze(0),
-                        lambda_content=lambda_content
-                    )
-                    style_l = style_loss(
-                        original_image=batch,
-                        generated_image=out[0].unsqueeze(0),
-                        lambda_style=lambda_style
-                    )
-
                     loss = total_loss(
                         original_image=batch, 
                         generated_image=out[0].unsqueeze(0),
-                        lambda_structure=lambda_structure,
-                        lambda_content=lambda_content,
-                        lambda_style=lambda_style,
-                        lambda_color=lambda_ca
+                        lambda_structure=alpha_structure,
+                        lambda_content=alpha_content,
+                        lambda_style=alpha_style,
+                        lambda_color=alpha_ca
                     )
                 
                 # Scale loss and perform backward pass
@@ -210,36 +183,13 @@ if __name__ == "__main__":
             else:
                 # Forward pass (without mixed precision)
                 out = model(batch, style_emb, timesteps)
-
-                # Compute loss
-                structure_l = structure_preservation_loss(
-                    original_image=batch, 
-                    generated_image=out[0].unsqueeze(0),
-                    lambda_structure=lambda_structure,
-                )
-                ca_l = color_alignment_loss(
-                    original_image=batch,
-                    generated_image=out[0].unsqueeze(0),
-                    lambda_color=lambda_ca
-                )
-                content_l = content_loss(
-                    original_image=batch,
-                    generated_image=out[0].unsqueeze(0),
-                    lambda_content=lambda_content
-                )
-                style_l = style_loss(
-                    original_image=batch,
-                    generated_image=out[0].unsqueeze(0),
-                    lambda_style=lambda_style
-                )
-                
                 loss = total_loss(
                     original_image=batch, 
                     generated_image=out[0].unsqueeze(0),
-                    lambda_structure=lambda_structure,
-                    lambda_content=lambda_content,
-                    lambda_style=lambda_style,
-                    lambda_color=lambda_ca
+                    lambda_structure=alpha_structure,
+                    lambda_content=alpha_content,
+                    lambda_style=alpha_style,
+                    lambda_color=alpha_ca
                 )
                 loss.backward()
                 # print("backward")
@@ -283,7 +233,9 @@ if __name__ == "__main__":
                 scaler.update()
             else:
                 optimizer.step()
-
+            
+            # Update statistics
+            losses.append(loss.item())
             epoch_loss += loss.item()
             num_batches += 1
             
@@ -309,66 +261,33 @@ if __name__ == "__main__":
         
         avg_epoch_loss = epoch_loss / num_batches
         print(f"Epoch {epoch+1} completed in {time.time() - start_time:.2f} seconds")
-        print(f"Epoch {epoch+1} loss: {loss}, avg loss: {avg_epoch_loss:.6f}")
+        print(f"Epoch {epoch+1} loss: {avg_epoch_loss:.6f}")
         
         # Update learning rate based on loss
         scheduler.step(avg_epoch_loss)
-
-        # Update statistics
-        losses.append(loss.item())
-        structure_losses.append(structure_l.item())
-        ca_losses.append(ca_l.item())
-        content_losses.append(content_l.item())
-        style_losses.append(style_l.item())
         
         # Save checkpoint
         if (epoch + 1) % 10 == 0:
             if not os.path.exists('checkpoints'):
                 os.makedirs('checkpoints')
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': avg_epoch_loss,
+            }, f'checkpoints/checkpoint_epoch_{epoch+1}.pt')
 
-            torch.save(
-                lora.lora_state_dict(model, bias='lora_only'), 
-                f'checkpoints/checkpoint_epoch_{epoch+1}.pt'
-            )
-            # torch.save({
-            #     'epoch': epoch,
-            #     'model_state_dict': model.state_dict(),
-            #     'optimizer_state_dict': optimizer.state_dict(),
-            #     'loss': avg_epoch_loss,
-            # }, f'checkpoints/checkpoint_epoch_{epoch+1}.pt')
 
-    # Plot losses 
-    # Create figure with GridSpec
-    fig, ax = plt.subplots(3, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 1, 2]})
-    # Plot the first four graphs
-    ax[0, 0].plot(structure_losses)
-    ax[0, 0].set_title("Structure Loss")
-    ax[0, 1].plot(ca_losses)
-    ax[0, 1].set_title("Color Alignment Loss")
-    ax[1, 0].plot(content_losses)
-    ax[1, 0].set_title("Content Loss")
-    ax[1, 1].plot(style_losses)
-    ax[1, 1].set_title("Style Loss")
-    
-    # Remove unused axes in the last row
-    fig.delaxes(ax[2, 0])
-    fig.delaxes(ax[2, 1])
-
-    # Add last graph spanning both columns
-    big_ax = fig.add_subplot(3, 1, 3)
-    big_ax.plot(losses)             # losses is a list -> no need to convert to numpy array
-    big_ax.hlines(np.mean(losses), 0, len(losses), colors='r', linestyles='--')
-    big_ax.set_xlabel("Num_epochs")
-    big_ax.set_ylabel("Loss")
-    # big_ax.set_title("Total loss")
-
-    # Adjust layout
-    plt.tight_layout()
+    # Plot losses
+    plt.figure(figsize=(12, 6))
+    plt.plot(losses, label='Loss')
+    plt.hlines(avg_epoch_loss, 0, len(losses), colors='red', linestyles='dashed')
     plt.title('Training Loss')
+    plt.xlabel('Batch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.savefig(f"{output_dir}/losses.png")
     # plt.show()
-    plt.savefig(f"{output_dir}/losses_epoch.png")
-
-
 
     # Terminal execution
     # python -m bin.train --config_path /Users/hoangthuyduongvu/Desktop/BiOSGen/configs/train_config.yml --style_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/NKX3/A3_TMA_15_02_IIB_NKX.png --original_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/HE/A3_TMA_15_02_IVB_HE.png

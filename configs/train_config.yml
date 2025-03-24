@@ -1,7 +1,7 @@
 device: 'cpu'
 
-batch_size: 3 
-learning_rate: 1e-5
+batch_size: 5
+learning_rate: 1e-3
 num_epochs: 100
 gradient_clip_val: 1.0
 
@@ -13,7 +13,7 @@ loss_alpha:
 
 optimizer:      # Adam as default
   lr: 1e-4
-  weight_decay: 1e-3
+  weight_decay: 1e-6
   
 # Image parameters
 Image:
