@@ -36,10 +36,13 @@ BiOSGen/
 │   ├── test.py     
 │── scripts/                
 │   ├── launch.sh      
+<<<<<<< HEAD
 │── data/                   # hidden directory       
 │── archive/                 # hidden directory
 │── train_results/                 # hidden directory
 │── evaluation_results/                 # hidden directory
+=======
+>>>>>>> 999f5435c4a67aa99a2dbcc010c4769e653a35a8
 │── environment.yml
 │── README.md               
 │── .gitignore  
@@ -55,16 +58,16 @@ conda env create -f environment.yml
 #### For miniforge users:
 **Warning**:
 
-You will need to remove line 4 and line 32-34 from `environment.yml` to avoid conflicts while setting up the environment using YAML file. 
+You will need to remove line 4 and lines 32-34 from `environment.yml` to avoid conflicts while setting up the environment using YAML file. 
 
-As you can't access to several `conda` packages in miniforge, you will not be enable to use Moondream model from *vikhyatk/moondream2*. However, there are alternatives such as *HuggingFaceTB/SmolVLM-Instruct*, *microsoft/OmniParser-v2.0*, etc. 
+As you can't access several `conda` packages in miniforge, you will not be able to use the Moondream model from *vikhyatk/moondream2*. However, there are alternatives such as *HuggingFaceTB/SmolVLM-Instruct*, *microsoft/OmniParser-v2.0*, etc. 
 
 ```bash
 conda env create -f environment.yml -k
 ```
 
 ### Data installation
->**Note**: Data installation instruction for the EMPaCT dataset provided by [AI4SCR/VirtualMultiplexer](https://github.com/AI4SCR/VirtualMultiplexer)
+>**Note**: Data installation instruction for the EMPaCT dataset provided by [AI4SCR](https://github.com/AI4SCR/VirtualMultiplexer)
 #### Downloading the EMPaCT dataset 
 
 European Multicenter Prostate Cancer Clinical and Translational Research Group (EMPaCT) [[1](https://www.sciencedirect.com/science/article/pii/S0022534712029710), [2](https://www.sciencedirect.com/science/article/pii/S2405456917300020), [3](https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2020.00246/full)] contains prostate cancer tissue microarrays (TMAs) from 210 patients with 4 cores per patient for several clinically relevant markers.
@@ -74,7 +77,7 @@ All images from Hematoxylin & Eosin (H&E) and Immunohistochemistry (IHC) stainin
 #### Downloading Masks, Bounding Boxes and Data Splits
 
 AI4SCR uploaded the all relevant information to [Figshare]( https://figshare.com/projects/VirtualMultiplexer/230498) and 
-provide a notebook [preprocess/preprocess.ipynb](preprocess%2Fpreprocess.ipynb) to demonstrate how to process and plot the data.
+provide a notebook to demonstrate how to process and plot the data.
 
 ### To visualize training process
 ```bash
