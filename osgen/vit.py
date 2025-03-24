@@ -110,7 +110,7 @@ def extract_style_embedding(
         ax[1].set_title('After Projection')
 
         if savefig:
-            plt.savefig('archive/style_embedding.png')
+            plt.savefig('assets/style_embedding.png')
 
         plt.show()
     return style_embedding
