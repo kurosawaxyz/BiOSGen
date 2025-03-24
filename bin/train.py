@@ -357,6 +357,7 @@ if __name__ == "__main__":
     # Add last graph spanning both columns
     big_ax = fig.add_subplot(3, 1, 3)
     big_ax.plot(losses)             # losses is a list -> no need to convert to numpy array
+    big_ax.hlines(np.mean(losses), 0, len(losses), colors='r', linestyles='--')
     big_ax.set_xlabel("Num_epochs")
     big_ax.set_ylabel("Loss")
     # big_ax.set_title("Total loss")
