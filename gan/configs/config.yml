@@ -1,0 +1,86 @@
+device: cpu
+is_train: True
+i2i_checkpoint_path: '/Users/hoangthuyduongvu/Documents/icm/tumor-augmentation/assets'
+train_data_path: '/Users/hoangthuyduongvu/Documents/icm/tumor-augmentation/data/train'
+data_csv_path: "/Users/hoangthuyduongvu/Documents/icm/tumor-augmentation/i2iTranslation/data.csv"
+
+train: 
+  batch_size: 10
+  num_epochs: 25
+  save_epoch_freq: 10
+  model: 
+    generator: 
+      netG: 'resnet_9blocks'
+      ngf: 64
+      normG: 'instance'
+
+    discriminator: 
+      netD: 'n_layers'
+      init_type: 'normal'
+      init_gain: 0.02
+      ndf: 64
+      n_layers_D: 3
+      normD: 'instance' 
+
+    projector:
+      netF: 'mlp_sample'
+      netF_nc: 256
+      init_type: 'normal'
+      init_gain: 0.02
+
+    init_type: 'normal'
+    init_gain: 0.02
+    no_antialias: False
+    no_antialias_up: False
+  
+  data: 
+    input_nc: 3
+    output_nc: 3
+    patch_size: 256
+    downsample: 4
+  
+  
+  params: 
+    image_model_name: 'vgg16'
+    loss:
+      gan_loss: 
+        gan_mode: 'lsgan'
+        nce_idt: True
+        lambda_NCE: 1.0
+        nce_layers: '0,4,8,12,16'
+        nce_num_patches: 256  
+        flip_equivariance: False
+        nce_includes_all_negatives_from_minibatch: False
+        nce_T: 0.07
+
+      sc_loss: 
+        lambda_con: 1.0
+        lambda_sty: 1.0
+
+    optimizer:
+      lr: 
+        lr_G: 0.0002
+        lr_D: 0.0002
+        lr_I: 0.0002
+        lr_policy: 'linear'
+        lr_decay_iters: 50
+
+      params:
+        beta1: 0.5
+        beta2: 0.999
+        weight_decay: 0.0
+
+    is_image_match: True
+    patch_batch_size: 256
+    tile_batch_size: 256
+    n_epochs_decay: 100
+    n_epochs: 200
+    patch_norm: True
+    patch_clip: 0.05
+    patch_batch_size: 256
+
+
+    save: 
+      epoch_count: 10
+      continue_train: False
+      loss_logging_freq: 10
