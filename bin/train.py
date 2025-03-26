@@ -1,3 +1,4 @@
+
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -231,17 +232,17 @@ if __name__ == "__main__":
 
             # SOLUTION 4: Advanced gradient clipping
             # Clip gradients to prevent exploding gradients
-            # torch.nn.utils.clip_grad_norm_(
-            #     [p for p in model.parameters() if p.requires_grad],
-            #     gradient_clip_val
-            # )
+            torch.nn.utils.clip_grad_norm_(
+                [p for p in model.parameters() if p.requires_grad],
+                gradient_clip_val
+            )
             
             # SOLUTION 5: Gradient monitoring and anomaly detection
             # Check for NaN gradients or loss
-            # if torch.isnan(loss).any():
-            #     print(f"NaN detected in loss at batch {batch_idx}")
-            #     nan_detected = True
-            #     break
+            if torch.isnan(loss).any():
+                print(f"NaN detected in loss at batch {batch_idx}")
+                nan_detected = True
+                break
                 
             # SOLUTION 2: Skip updates with NaN gradients
             nan_grads = False
