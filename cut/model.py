@@ -1,12 +1,12 @@
 import numpy as np
 import torch
 
-from i2iTranslation.base_model import BaseModel
-from i2iTranslation import network  
-from i2iTranslation.local_loss import GANLoss, PatchNCELoss
-from i2iTranslation.global_loss import TileLevelCriterion
+from cut.base_model import BaseModel
+from cut import network  
+from cut.local_loss import GANLoss, PatchNCELoss
+from cut.global_loss import TileLevelCriterion
 
-class i2iTranslationModel(BaseModel):
+class cutModel(BaseModel):
     def __init__(self, args):
         """
         Parameters:

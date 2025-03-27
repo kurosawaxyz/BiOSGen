@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from packaging import version
 
-""" Code used from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/i2iTranslation/models/neighborhood_objectives.py """
+""" Code used from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/cut/models/neighborhood_objectives.py """
 
 class GANLoss(nn.Module):
     """Define different GAN objectives.

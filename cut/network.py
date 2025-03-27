@@ -37,7 +37,7 @@ def get_scheduler(optimizer, args):
     For other schedulers (step, plateau, and cosine), we use the default PyTorch schedulers.
     See https://pytorch.org/docs/stable/optim.html for more details.
 
-    Code snippet from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/i2iTranslation/models/networks.py
+    Code snippet from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/cut/models/networks.py
     """
     lr_policy = args['train.params.optimizer.lr.lr_policy']
     lr_decay_iters = args['train.params.optimizer.lr.lr_decay_iters']

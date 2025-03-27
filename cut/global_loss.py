@@ -1,5 +1,5 @@
 import torch.nn as nn
-from i2iTranslation.vgg import *
+from cut.vgg import *
 import torch
 
 
@@ -68,7 +68,7 @@ def gram_matrix(x, normalize=True):
     return gram
 
 class TileLevelCriterion(nn.Module):
-    """ Code inspired from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/i2iTranslation/models/global_objectives.py """
+    """ Code inspired from https://github.com/AI4SCR/VirtualMultiplexer/blob/master/cut/models/global_objectives.py """
     # https://www.biorxiv.org/content/10.1101/2023.11.29.568996v1.full.pdf - Page 25
     
     def __init__(self, args):

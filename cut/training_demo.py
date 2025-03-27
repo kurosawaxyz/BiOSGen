@@ -5,12 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from .model import i2iTranslationModel
+from .model import cutModel
 from .utils import *
 
 # Load configuration
 CONFIG_PATH = "/Users/hoangthuyduongvu/Desktop/tumor-augmentation/configs/config.yml"
-DATA_CSV_PATH = "/Users/hoangthuyduongvu/Desktop/tumor-augmentation/i2iTranslation/data.csv"
+DATA_CSV_PATH = "/Users/hoangthuyduongvu/Desktop/tumor-augmentation/cut/data.csv"
 
 def train():
 
@@ -20,7 +20,7 @@ def train():
     print("Data loaded!")
     
     device = args.device if torch.cuda.is_available() else "cpu"
-    model = i2iTranslationModel(args)#.to(device)
+    model = cutModel(args)#.to(device)
     model.netG.train()
     if hasattr(model, 'netD'):
         model.netD.train()
