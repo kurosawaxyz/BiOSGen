@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from .model import cutModel
+from .model import i2iTranslationModel
 from .utils import *
 
 # Load configuration
@@ -20,7 +20,7 @@ def train():
     print("Data loaded!")
     
     device = args.device if torch.cuda.is_available() else "cpu"
-    model = cutModel(args)#.to(device)
+    model = i2iTranslationModel(args)#.to(device)
     model.netG.train()
     if hasattr(model, 'netD'):
         model.netD.train()
