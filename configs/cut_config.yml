@@ -1,6 +1,6 @@
 device: cpu
 is_train: True
-i2i_checkpoint_path: '/Users/hoangthuyduongvu/Desktop/tumor-augmentation/checkpoints'
+i2i_checkpoint_path: '/Users/hoangthuyduongvu/Desktop/BiOSGen/checkpoints'
 
 train: 
   batch_size: 10

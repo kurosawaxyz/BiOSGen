@@ -26,7 +26,7 @@ def train():
         model.netD.train()
 
     D_loss, G_loss = [], []
-    num_epochs = args.train.num_epochs
+    num_epochs = 20
 
     print("Looping...")
     for epoch in range(num_epochs):
@@ -35,6 +35,8 @@ def train():
         for i in range(len(data)):
             real_img = preprocess_image(data["real"][0], device)
             fake_img = preprocess_image(data["fake"][0], device)
+            print(real_img.shape)
+            print(fake_img.shape)
             
             input_dict = {'src': real_img, 'dst': fake_img}
             model.data_dependent_initialize(input_dict)
