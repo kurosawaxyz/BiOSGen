@@ -6,7 +6,6 @@ __pycache__/
 archive/
 .DS_Store
 .vscode/
-*.txt
 *.pt
 evaluation_results/
 results/

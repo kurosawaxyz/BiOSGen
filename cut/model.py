@@ -6,7 +6,7 @@ from cut import network
 from cut.local_loss import GANLoss, PatchNCELoss
 from cut.global_loss import TileLevelCriterion
 
-class cutModel(BaseModel):
+class i2iTranslationModel(BaseModel):
     def __init__(self, args):
         """
         Parameters:

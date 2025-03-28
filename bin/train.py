@@ -356,4 +356,4 @@ if __name__ == "__main__":
 
 
     # Terminal execution
-    # python -m bin.train --config_path /Users/hoangthuyduongvu/Desktop/BiOSGen/configs/train_config.yml --style_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/NKX3/A3_TMA_15_02_IIB_NKX.png --original_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/HE/A3_TMA_15_02_IVB_HE.png
+    # python -m bin.train --config_path /Users/hoangthuyduongvu/Desktop/BiOSGen/configs/train_config.yml --style_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/images/NKX3/A3_TMA_15_02_IIB_NKX.png --original_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/images/HE/A4_TMA_15_02_IIB_HE.png
