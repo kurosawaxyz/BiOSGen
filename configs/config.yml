@@ -7,7 +7,7 @@ show: False
 
 # Image parameters
 Image:
-  default_size: 128
+  default_size: 256
   default_channels: 3
 
   tissue_mask_params: 
@@ -17,7 +17,7 @@ Image:
     background_gray_threshold: 220
 
   patch_extraction_params:
-    patch_size: 128
+    patch_size: 256
     patch_tissue_threshold: 0.7
     is_visualize: False
 

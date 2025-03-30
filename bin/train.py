@@ -82,6 +82,7 @@ if __name__ == "__main__":
     print(f"Train dataset size: {len(data_loader.train_dataset)}")
     print(f"Validation dataset size: {len(data_loader.val_dataset)}")
     print(f"Test dataset size: {len(data_loader.test_dataset)}")
+    print("Patch size:", data_loader.train_dataset[0][0].shape)
 
 
 
@@ -356,4 +357,4 @@ if __name__ == "__main__":
 
 
     # Terminal execution
-    # python -m bin.train --config_path /Users/hoangthuyduongvu/Desktop/BiOSGen/configs/train_config.yml --style_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/images/NKX3/A3_TMA_15_02_IIB_NKX.png --original_path /Users/hoangthuyduongvu/Desktop/BiOSGen/data/images/HE/A4_TMA_15_02_IIB_HE.png
+    # python -m bin.train --config_path configs/train_config.yml --style_path demo/img/A6_TMA_15_02_IVB_NKX.png --original_path demo/img/A4_TMA_15_02_IVB_HE.png

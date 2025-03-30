@@ -146,7 +146,7 @@ def safe_loss(loss_value):
 
 def total_loss(original_image, generated_image, 
                lambda_structure=2*10**-4, lambda_color=10**-4, 
-               lambda_content=10**-3, lambda_style=10**-8, image_size=128, verbose=False):
+               lambda_content=10**-3, lambda_style=10**-8, image_size=256, verbose=False):
     """
     Compute the total loss by combining:
     - Structure Preservation Loss
