@@ -11,6 +11,9 @@ import numpy as np
 from torch.utils.data import DataLoader, Dataset
 import torch.transforms as transforms
 
+
+# Currently use osgen DataLoader
+
 class BaseDataset(Dataset):
     def __init__(self, args, image_fmt: str="png", **kwargs) -> None: 
         self.is_train = args.is_train
