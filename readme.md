@@ -80,18 +80,9 @@ All images from Hematoxylin & Eosin (H&E) and Immunohistochemistry (IHC) stainin
 AI4SCR uploaded the all relevant information to [Figshare]( https://figshare.com/projects/VirtualMultiplexer/230498) and 
 provide a notebook to demonstrate how to process and plot the data.
 
-### To visualize training process
+#### Train BiOSGen
+**Demo notebook: [Train Colab](https://colab.research.google.com/drive/1t5BJ_b3xM9JekRdMLy8ip08sHwx-ZnqD?usp=sharing)**
+
 ```bash
 python -m bin.train --config_path <CONFIG-PATH> --style_path <STYLE-TUMOR-PATH> --original_path <ORIGINAL-TUMOR-PATH>
 ```
-
-### To visualize evaluation process
-```bash
-python -m bin.eval --config_path <CONFIG-PATH> --style_path <STYLE-TUMOR-PATH> --original_path <ORIGINAL-TUMOR-PATH>
-```
-### To use / test the model
-```bash
-python -m bin.test --config_path <CONFIG-PATH> --style_path <STYLE-TUMOR-PATH> --original_path <ORIGINAL-TUMOR-PATH>
-```
-
-## Upcoming objectif
