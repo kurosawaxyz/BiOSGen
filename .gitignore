@@ -13,3 +13,4 @@ train_results/
 test_results/
 eval_results/
 checkpoints/
+pytorch-CycleGAN-and-pix2pix/
