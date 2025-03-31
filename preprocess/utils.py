@@ -94,7 +94,7 @@ def get_image_patches(
         
     return patches
 
-def resize_patch(image, image_size=256):
+def resize_patch(image, image_size=128):
     img = cv2.resize(image, (image_size, image_size))
     return img
 

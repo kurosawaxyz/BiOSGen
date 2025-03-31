@@ -13,7 +13,7 @@ class UNetModel(nn.Module):
         num_res_blocks,
         dropout=0.5,
         in_channels: int = 4,
-        image_size: int = 256,
+        image_size: int = 128,
         use_scale_shift_norm=False,
         resblock_updown=False,
         num_classes=None,
