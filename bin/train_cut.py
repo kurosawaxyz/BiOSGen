@@ -94,6 +94,10 @@ if __name__ == "__main__":
     plt.savefig("train_results/res-losses.png")
     plt.show()
 
+    # Save model
+    torch.save(model.netG.state_dict(), "checkpoints/cut/netG.pth")
+    torch.save(model.netD.state_dict(), "checkpoints/cut/train_results/netD.pth")
+
     # Generate images
     with torch.no_grad():
         model.forward()
