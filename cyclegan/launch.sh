@@ -25,7 +25,7 @@ echo "Dependencies installed."
 # Train the model
 python train.py \
   --dataroot ../cyclegan/data/ \
-  --name tumor \
+  --name tumor_cyclegan \
   --model cycle_gan \
   --display_id -1 && \
 echo "Training started."
