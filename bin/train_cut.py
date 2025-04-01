@@ -51,6 +51,10 @@ if __name__ == "__main__":
     print(f"Test dataset size: {len(data_loader.test_dataset)}")
 
     model = i2iTranslationModel(cfg)
+    # Save model
+    torch.save(model.netG.state_dict(), "checkpoints/cut/netG.pt")
+    torch.save(model.netD.state_dict(), "checkpoints/cut/netD.pt")
+
     model.netG.train()
     if hasattr(model, 'netD'):
         model.netD.train()
@@ -91,12 +95,12 @@ if __name__ == "__main__":
 
     if not os.path.exists("train_results"):
         os.mkdir("train_results")
-    plt.savefig("train_results/res-losses.png")
-    plt.show()
+    plt.savefig("train_results/cut_res-losses.png")
+    # plt.show()
 
     # Save model
-    torch.save(model.netG.state_dict(), "checkpoints/cut/netG.pth")
-    torch.save(model.netD.state_dict(), "checkpoints/cut/train_results/netD.pth")
+    torch.save(model.netG.state_dict(), "checkpoints/cut/netG.pt")
+    torch.save(model.netD.state_dict(), "checkpoints/cut/netD.pt")
 
     # Generate images
     with torch.no_grad():
@@ -111,8 +115,8 @@ if __name__ == "__main__":
     ax[2].imshow(output[0].permute(1, 2, 0).detach().numpy())
     ax[2].set_title("Generated Image")
     # Transpose the image to [height, width, channels]
-    plt.savefig("train_results/res-image.png")
-    plt.show()
+    plt.savefig("train_results/cut_res-image.png")
+    # plt.show()
 
 
     # Terminal execution

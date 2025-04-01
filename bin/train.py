@@ -314,7 +314,7 @@ if __name__ == "__main__":
 
             torch.save(
                 lora.lora_state_dict(model, bias='lora_only'), 
-                f'checkpoints/checkpoint_epoch_{epoch+1}.pt'
+                f'checkpoints/main/checkpoint_epoch_{epoch+1}.pt'
             )
             # torch.save({
             #     'epoch': epoch,
@@ -352,7 +352,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.title('Training Loss')
     # plt.show()
-    plt.savefig(f"{output_dir}/losses_epoch.png")
+    plt.savefig(f"{output_dir}/osgen_losses_epoch.png")
 
 
 
