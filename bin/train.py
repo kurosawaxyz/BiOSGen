@@ -316,6 +316,7 @@ if __name__ == "__main__":
                 lora.lora_state_dict(model, bias='lora_only'), 
                 f'checkpoints/main/checkpoint_epoch_{epoch+1}.pt'
             )
+            torch.save(model.state_dict(), f'checkpoints/main/checkpoint_epoch_{epoch+1}_all.pt')
             # torch.save({
             #     'epoch': epoch,
             #     'model_state_dict': model.state_dict(),
