@@ -6,11 +6,11 @@ __pycache__/
 archive/
 .DS_Store
 .vscode/
-*.pt
+# *.pt
 evaluation_results/
 results/
 train_results/
 test_results/
 eval_results/
-checkpoints/
+# checkpoints/
 pytorch-CycleGAN-and-pix2pix/
