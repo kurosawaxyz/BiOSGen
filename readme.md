@@ -55,6 +55,7 @@ BiOSGen/
 #### For miniconda3 users:
 ```bash
 conda env create -f environment.yml
+conda activate biosgen
 ```
 #### For miniforge users:
 **Warning**:
@@ -65,7 +66,29 @@ As you can't access several `conda` packages in miniforge, you will not be able 
 
 ```bash
 conda env create -f environment.yml -k
+conda activate biosgen
 ```
+
+#### Important notice
+**Warning**:
+
+Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:
+
+```shell
+# Install Homebrew if it haven't been done (remember to follow given instructions)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Check if brew is well established
+brew --version
+
+# Install cmake and protobuf via brew
+brew install cmake protobuf
+
+# Rerun pip setup
+pip install -r requirements.txt
+```
+
+
 
 ### Data installation
 >**Note**: Data installation instruction for the EMPaCT dataset provided by [AI4SCR](https://github.com/AI4SCR/VirtualMultiplexer)

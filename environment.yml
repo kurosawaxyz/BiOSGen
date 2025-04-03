@@ -1,8 +1,9 @@
-name: BiOSGen
+name: biosgen
 channels:
   - conda-forge
   - defaults
 dependencies:
+  - python=3.10
   - pip
   - pip:
       - moondream==0.0.5
@@ -28,7 +29,11 @@ dependencies:
       - peft
       - thop
       - omegaconf
+      - onnx
+      - onnxruntime
 
   - conda:
     - libvips
     - glib
+    - cmake  # CMake for ONNX building
+    - protobuf  # Protobuf for ONNX building
