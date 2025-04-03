@@ -31,5 +31,3 @@ python train.py \
   --model cycle_gan \
   --display_id -1 && \
 echo "Training started."
-
-
