@@ -57,41 +57,26 @@ if __name__ == "__main__":
     if not os.path.exists(dataset_path):
         os.mkdir(dataset_path)
 
-    # Create main A and B directories for the Pix2Pix structure
-    for domain in ['A', 'B']:
-        domain_path = os.path.join(dataset_path, domain)
-        if not os.path.exists(domain_path):
-            os.mkdir(domain_path)
-           
-        # Create split subdirectories in each domain
-        for split in ['train', 'val', 'test']:
-            split_path = os.path.join(domain_path, split)
-            if not os.path.exists(split_path):
-                os.mkdir(split_path)
+    # Create only train, val, test directories
+    for split in ['train', 'val', 'test']:
+        split_path = os.path.join(dataset_path, split)
+        if not os.path.exists(split_path):
+            os.mkdir(split_path)
 
-    # Save train data
-    for i, (img_a, img_b) in enumerate(data_loader.train_dataset):
+    # Save train data - only domain A (original) images
+    for i, (img_a, _) in enumerate(data_loader.train_dataset):
         img_a_pil = Image.fromarray(img_a.permute(1, 2, 0).detach().numpy().astype(np.uint8))
-        img_b_pil = Image.fromarray(img_b.permute(1, 2, 0).detach().numpy().astype(np.uint8))
-       
-        img_a_pil.save(f"{dataset_path}/A/train/img_{i}.png")
-        img_b_pil.save(f"{dataset_path}/B/train/img_{i}.png")
+        img_a_pil.save(f"{dataset_path}/train/img_{i}.png")
 
-    # Save validation data
-    for i, (img_a, img_b) in enumerate(data_loader.val_dataset):
-        img_a_pil = Image.fromarray(img_a.permute(1, 2, 0).detach().numpy().astype(np.uint8))
+    # Save validation data - only domain B (styled) images
+    for i, (_, img_b) in enumerate(data_loader.val_dataset):
         img_b_pil = Image.fromarray(img_b.permute(1, 2, 0).detach().numpy().astype(np.uint8))
-       
-        img_a_pil.save(f"{dataset_path}/A/val/img_{i}.png")
-        img_b_pil.save(f"{dataset_path}/B/val/img_{i}.png")
+        img_b_pil.save(f"{dataset_path}/val/img_{i}.png")
 
-    # Save test data
-    for i, (img_a, img_b) in enumerate(data_loader.test_dataset):
-        img_a_pil = Image.fromarray(img_a.permute(1, 2, 0).detach().numpy().astype(np.uint8))
+    # Save test data - only domain B (styled) images
+    for i, (_, img_b) in enumerate(data_loader.test_dataset):
         img_b_pil = Image.fromarray(img_b.permute(1, 2, 0).detach().numpy().astype(np.uint8))
-       
-        img_a_pil.save(f"{dataset_path}/A/test/img_{i}.png")
-        img_b_pil.save(f"{dataset_path}/B/test/img_{i}.png")
+        img_b_pil.save(f"{dataset_path}/test/img_{i}.png")
 
     print(f"Dataset successfully created at {dataset_path}")
     print("Finished saving data.")
