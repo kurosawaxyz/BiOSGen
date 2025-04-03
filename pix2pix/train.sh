@@ -26,7 +26,7 @@ echo "Dependencies installed."
 
 # Train the model
 python train.py \
-  --dataroot ../pix2pix/data/A \
+  --dataroot ../pix2pix/data/ \
   --name tumor_pix2pix \
   --model pix2pix \
   --display_id -1 && \
