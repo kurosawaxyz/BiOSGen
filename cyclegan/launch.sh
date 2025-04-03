@@ -7,13 +7,15 @@ python -m cyclegan.loader --config_path configs/config.yml --style_path demo/img
 echo "Data loaded."
 
 # Check if the repository already exists
-if [ ! -d "pytorch-CycleGAN-and-pix2pix" ]; then
-  # Clone the repository if it doesn't exist
-  git clone https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix.git && \
-  echo "Repository cloned."
-else
-  echo "Repository already exists, skipping git clone."
+if [ -d "pytorch-CycleGAN-and-pix2pix" ]; then
+  # Remove the existing repository
+  echo "Repository already exists, removing it..."
+  rm -rf pytorch-CycleGAN-and-pix2pix
 fi
+
+# Clone the repository
+git clone https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix.git && \
+echo "Repository cloned."
 
 # Change directory to the cloned repository
 cd pytorch-CycleGAN-and-pix2pix || exit
