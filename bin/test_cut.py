@@ -66,7 +66,12 @@ if __name__ == "__main__":
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}/{num_epochs}")
         for i in tqdm(range(cfg.train.batch_size)):
-            real_A, real_B = next(iter(data_loader.train_dataset))
+            real_A, real_B = data_loader.train_dataset[0][0]
+
+            real_A = real_A.unsqueeze(0)
+
+            print(real_A.shape)
+            print(real_B.shape)
 
             input_dict = {
                 'src': real_A.unsqueeze(0).to(device),
