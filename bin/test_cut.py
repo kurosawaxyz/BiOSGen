@@ -57,11 +57,9 @@ if __name__ == "__main__":
     model.netD.load_state_dict(torch.load("checkpoints/cut/netD.pt"))
     
     # Test the model
-    model.netG.test()
+    model.netG.eval()
     if hasattr(model, 'netD'):
-        model.netD.test()
-    # Test the model on a batch of data
-    test_loader = data_loader.test_dataloader()
+        model.netD.eval()
 
     num_epochs = cfg.train.num_epochs
 
@@ -96,4 +94,4 @@ if __name__ == "__main__":
 
 
 # Command to run the script:
-# python bin/test_cut.py --config_path configs/cut_config.yml --style_path demo/img/A6_TMA_15_02_IVB_NKX.png --original_path demo/img/A4_TMA_15_02_IVB_HE.png
+# python -m bin.test_cut --config_path configs/cut_config.yml --style_path demo/img/A6_TMA_15_02_IVB_NKX.png --original_path demo/img/A4_TMA_15_02_IVB_HE.png
