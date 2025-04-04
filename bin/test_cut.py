@@ -66,12 +66,9 @@ if __name__ == "__main__":
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}/{num_epochs}")
         for i in tqdm(range(cfg.train.batch_size)):
-            real_A, real_B = data_loader.train_dataset[0][0]
+            real_A, real_B = data_loader.train_dataset[i]
 
-            real_A = real_A.unsqueeze(0)
-
-            print(real_A.shape)
-            print(real_B.shape)
+            
 
             input_dict = {
                 'src': real_A.unsqueeze(0).to(device),
@@ -86,16 +83,18 @@ if __name__ == "__main__":
                 output = model.fake_B
 
             # Save the generated image
-            output_image = output[0].squeeze(0).permute(1,2,0).cpu().detach().numpy()
-            fig, ax = plt.subplots(1, 3, figsize=(10, 5))
-            ax[0].imshow(real_A.permute(1, 2, 0).detach().numpy().astype(int))
-            ax[0].set_title("Real Image")
-            ax[1].imshow(real_B[0].permute(1, 2, 0).detach().numpy().astype(int))
-            ax[1].set_title("Fake Image")
-            ax[2].imshow(output[0].permute(1, 2, 0).detach().numpy())
-            ax[2].set_title("Generated Image")
-            # Transpose the image to [height, width, channels]
-            plt.savefig(f"archive/cut_test/cut_res-image_{num_epochs}_{i}.png")
+            plt.imshow(real_A.permute(1, 2, 0).detach().numpy().astype(int))
+            plt.axis("off")
+            plt.savefig(f"archive/cut_test/real_A_{num_epochs}_{i}.png")
+
+            plt.imshow(real_B[0].permute(1, 2, 0).detach().numpy().astype(int))
+            plt.axis("off")
+            plt.savefig(f"archive/cut_test/real_B_{num_epochs}_{i}.png")
+
+            plt.imshow(output[0].permute(1, 2, 0).detach().numpy())
+            plt.axis("off")
+            plt.savefig(f"archive/cut_test/fake_A_{num_epochs}_{i}.png")
+
 
 
 # Command to run the script:
