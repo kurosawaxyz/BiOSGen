@@ -67,6 +67,8 @@ eval_metrics = {
     'color_alignment_loss': []
 }
 
+print("Total data for eval:", len(data_loader.val_dataset))
+
 # Switch model to evaluation mode
 model.eval()
 # model.eval()    # double eval to prevent merge LoRA parameters to basic model parameters
@@ -74,7 +76,7 @@ model.eval()
 # Disable gradient computation
 with torch.no_grad():
     # Use test dataset for evaluation
-    for idx in range(5):
+    for idx in range(len(data_loader.val_dataset)):
         print(f"Evaluating sample {idx+1}...")
         # Get batch
         batch, style = data_loader.test_dataset[idx]
@@ -108,7 +110,7 @@ with torch.no_grad():
             generated_image=out[0].unsqueeze(0),
             lambda_content=cfg.losses.lambda_content
         )
-        
+
         style_l = style_loss(
             original_image=batch,
             generated_image=out[0].unsqueeze(0),
@@ -136,15 +138,14 @@ with torch.no_grad():
             # Convert tensor to image
             # generated_img = out[0].permute(1,2,0).detach().numpy()
             # plt.imsave(os.path.join(args.output_dir, f'generated_image_{idx}.png'), generated_img)
-            fig, ax = plt.subplots(1, 4, figsize=(12, 4))   
-            for j in range(len(out[0])):
-                ax[j].imshow(out[0][j].detach().numpy())
-                ax[j].axis('off')
-                ax[j].set_title(f'Output {j}_{idx}')
-            plt.savefig(os.path.join(args.output_dir, f'generated_image_{idx}.png'))
-            plt.close()
 
-# Plot losses 
+            from PIL import Image
+            generated_img = out[0].permute(1,2,0).detach().numpy().astype(np.uint8)
+            fake_A_pil = Image.fromarray(generated_img)
+            fake_A_pil.save(os.path.join(args.output_dir, f'generated_image_{idx}.png'))
+            
+
+    # Plot losses 
     # Create figure with GridSpec
     fig, ax = plt.subplots(3, 2, figsize=(10, 8), gridspec_kw={'height_ratios': [1, 1, 2]})
     # Plot the first four graphs
@@ -175,3 +176,6 @@ with torch.no_grad():
     # plt.show()
     plt.savefig(f"{args.output_dir}/losses_epoch.png")
     # plt.savefig(f"{output_dir}/losses_epoch.png")
+
+# Command
+# python -m bin.eval --config_path configs/train_config.yml --style_path demo/img/A6_TMA_15_02_IVB_NKX.png --original_path demo/img/A4_TMA_15_02_IVB_HE.png --checkpoint_path checkpoints/latest_osgen.pt --output_dir archive
