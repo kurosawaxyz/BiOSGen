@@ -1,7 +1,7 @@
-python test.py --dataroot ../pix2pix/data/ --direction BtoA --model pix2pix --name tumor_pix2pix --use_wandb && \
-echo "Testing started."
+# Change directory to the cloned repository
+cd pytorch-CycleGAN-and-pix2pix || exit
 
-# Move the trained model to the checkpoints directory
-mkdir -p ../checkpoints && \
-mv ../pytorch-CycleGAN-and-pix2pix/checkpoints/tumor_pix2pix ../checkpoints/ && \
-echo "Model moved to checkpoints directory."
+python test.py --dataroot ../pix2pix/data/ --direction BtoA --model pix2pix --name tumor_pix2pix --use_wandb && \
+
+# Print a message when testing is finished
+echo "Testing finished."
