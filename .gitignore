@@ -8,7 +8,7 @@ archive/
 .vscode/
 *.pt
 evaluation_results/
-# results/
+results/
 train_results/
 test_results/
 eval_results/
