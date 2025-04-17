@@ -14,7 +14,7 @@ Future work will focus on refining the diffusion model to generate more accurate
 ## Model architecture
 <div align="center">
 
-  <img src="assets/main.drawio.png" alt="architecture" width="750"/>
+  <img src="assets/diagram.png" alt="architecture" width="750"/>
 
 </div>
 
