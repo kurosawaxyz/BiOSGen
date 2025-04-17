@@ -44,16 +44,6 @@ BiOSGen/
 │   ├── test.py     
 │── scripts/                
 │   ├── launch.sh     
-│── cyclegan/
-│   ├── dataloader.py      
-│   ├── loader.py      
-│   ├── train.sh
-│   ├── test.sh
-│── pix2pix/
-│   ├── dataloader.py      
-│   ├── loader.py      
-│   ├── train.sh
-│   ├── test.sh
 │── environment.yml
 │── README.md               
 │── .gitignore  
