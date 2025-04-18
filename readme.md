@@ -14,7 +14,7 @@ Future work will focus on refining the diffusion model to generate more accurate
 ## Model architecture
 <div align="center">
 
-  <img src="assets/main.drawio.png" alt="architecture" width="500"/>
+  <img src="assets/diagram.png" alt="architecture" width="750"/>
 
 </div>
 
@@ -44,16 +44,6 @@ BiOSGen/
 │   ├── test.py     
 │── scripts/                
 │   ├── launch.sh     
-│── cyclegan/
-│   ├── dataloader.py      
-│   ├── loader.py      
-│   ├── train.sh
-│   ├── test.sh
-│── pix2pix/
-│   ├── dataloader.py      
-│   ├── loader.py      
-│   ├── train.sh
-│   ├── test.sh
 │── environment.yml
 │── README.md               
 │── .gitignore  
