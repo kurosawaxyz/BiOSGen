@@ -72,7 +72,9 @@ conda activate biosgen
 #### Important notice
 **Warning**:
 
-Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:
+1. Miniconda environement setup for MacOS has been removed (starting Apr 19 2025), the current version is written for Linux with CUDA. Make sure you're on Linux and have CUDA installed before executing the YAML file. 
+
+2. Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:
 
 ```shell
 # Install Homebrew if it haven't been done (remember to follow given instructions)
