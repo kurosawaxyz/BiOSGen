@@ -21,3 +21,4 @@ loralib
 peft
 thop
 omegaconf
+scipy

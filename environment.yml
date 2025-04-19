@@ -8,6 +8,7 @@ dependencies:
   - pip:
       - moondream==0.0.5
       - opencv-python
+      - scipy
       - torch 
       - torchvision 
       - numpy 

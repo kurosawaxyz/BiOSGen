@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from PIL import Image
 import cv2
+import matplotlib.patches as patches
 
 from .tissue_mask import GaussianTissueMask
 
@@ -93,6 +94,26 @@ def get_image_patches(
         plt.show()
         
     return patches
+
+def plot_nuclei_labels(
+    image: np.ndarray, 
+    bbox_info: np.ndarray = None,
+    save_fpath: str = None
+):
+    color_palette = {
+        0 : 'r',    # NEG nuclei
+        1 : 'b'     # POS nuclei
+    }
+    fig, ax = plt.subplots()
+    ax.imshow(Image.fromarray(image))
+
+    for k in range(bbox_info.shape[0]):
+        y0, x0, y1, x1, label = bbox_info[k]
+        rect = patches.Rectangle((x0, y0), x1 - x0, y1 - y0, linewidth=0.5, edgecolor=color_palette[label], facecolor='none')
+        ax.add_patch(rect)
+    
+    if save_fpath is not None:
+        plt.savefig(save_fpath, dpi=600)
 
 def resize_patch(image, image_size=128):
     img = cv2.resize(image, (image_size, image_size))
