@@ -10,77 +10,6 @@ from skimage.filters import gaussian, threshold_otsu
 Image.MAX_IMAGE_PIXELS = 100000000000
 
 
-def _get_tissue_mask(
-    image: np.ndarray,
-    n_thresholding_steps: int = 1,
-    sigma: float = 0.0,
-    min_size: int = 500,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Get binary tissue mask
-
-    Args:
-        image (np.ndarray):
-            (m, n, 3) nd array of thumbnail RGB image
-            or (m, n) nd array of thumbnail grayscale image
-        n_thresholding_steps (int, optional): number of gaussian smoothign steps. Defaults to 1.
-        sigma (float, optional): sigma of gaussian filter. Defaults to 0.0.
-        min_size (int, optional): minimum size (in pixels) of contiguous tissue regions to keep. Defaults to 500.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]:
-            np int32 array
-                each unique value represents a unique tissue region
-            np bool array
-                largest contiguous tissue region.
-    """
-    if len(image.shape) == 3:
-        # grayscale thumbnail (inverted)
-        thumbnail = 255 - cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    else:
-        thumbnail = image
-
-    if len(np.unique(thumbnail)) == 1:
-        return None, None
-
-    for _ in range(n_thresholding_steps):
-
-        # gaussian smoothing of grayscale thumbnail
-        if sigma > 0.0:
-            thumbnail = gaussian(
-                thumbnail,
-                sigma=sigma,
-                mode="nearest",
-                preserve_range=True)
-
-        # get threshold to keep analysis region
-        try:
-            thresh = threshold_otsu(thumbnail[thumbnail > 0])
-        except ValueError:  # all values are zero
-            thresh = 0
-
-        # replace pixels outside analysis region with upper quantile pixels
-        thumbnail[thumbnail < thresh] = 0
-
-    # convert to binary
-    mask = 0 + (thumbnail > 0)
-
-    # find connected components
-    labeled, _ = ndimage.label(mask)
-
-    # only keep
-    unique, counts = np.unique(labeled[labeled > 0], return_counts=True)
-    if len(unique) != 0:
-        discard = np.in1d(labeled, unique[counts < min_size])
-        discard = discard.reshape(labeled.shape)
-        labeled[discard] = 0
-        # largest tissue region
-        mask = labeled == unique[np.argmax(counts)]
-        return labeled, mask
-    else:
-        return None, None
-
-
 class GaussianTissueMask:
     """Helper class to extract tissue mask from images"""
 
@@ -115,6 +44,77 @@ class GaussianTissueMask:
         self.downsampling_factor = downsampling_factor
         super().__init__(**kwargs)
         self.kernel = np.ones((self.kernel_size, self.kernel_size), "uint8")
+
+    @staticmethod
+    def _get_tissue_mask(
+        image: np.ndarray,
+        n_thresholding_steps: int = 1,
+        sigma: float = 0.0,
+        min_size: int = 500,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Get binary tissue mask
+
+        Args:
+            image (np.ndarray):
+                (m, n, 3) nd array of thumbnail RGB image
+                or (m, n) nd array of thumbnail grayscale image
+            n_thresholding_steps (int, optional): number of gaussian smoothign steps. Defaults to 1.
+            sigma (float, optional): sigma of gaussian filter. Defaults to 0.0.
+            min_size (int, optional): minimum size (in pixels) of contiguous tissue regions to keep. Defaults to 500.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]:
+                np int32 array
+                    each unique value represents a unique tissue region
+                np bool array
+                    largest contiguous tissue region.
+        """
+        if len(image.shape) == 3:
+            # grayscale thumbnail (inverted)
+            thumbnail = 255 - cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        else:
+            thumbnail = image
+
+        if len(np.unique(thumbnail)) == 1:
+            return None, None
+
+        for _ in range(n_thresholding_steps):
+
+            # gaussian smoothing of grayscale thumbnail
+            if sigma > 0.0:
+                thumbnail = gaussian(
+                    thumbnail,
+                    sigma=sigma,
+                    mode="nearest",
+                    preserve_range=True)
+
+            # get threshold to keep analysis region
+            try:
+                thresh = threshold_otsu(thumbnail[thumbnail > 0])
+            except ValueError:  # all values are zero
+                thresh = 0
+
+            # replace pixels outside analysis region with upper quantile pixels
+            thumbnail[thumbnail < thresh] = 0
+
+        # convert to binary
+        mask = 0 + (thumbnail > 0)
+
+        # find connected components
+        labeled, _ = ndimage.label(mask)
+
+        # only keep
+        unique, counts = np.unique(labeled[labeled > 0], return_counts=True)
+        if len(unique) != 0:
+            discard = np.in1d(labeled, unique[counts < min_size])
+            discard = discard.reshape(labeled.shape)
+            labeled[discard] = 0
+            # largest tissue region
+            mask = labeled == unique[np.argmax(counts)]
+            return labeled, mask
+        else:
+            return None, None
 
     @staticmethod
     def _downsample(image: np.ndarray, downsampling_factor: int) -> np.ndarray:

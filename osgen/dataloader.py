@@ -6,7 +6,7 @@ random.seed(42)
 
 # import os
 # os.chdir("..")
-from preprocess.utils import read_image, get_tissue_mask, get_image_patches, resize_patch, normalize_patch, convert_patch_to_tensor
+from preprocess.llm import read_image, get_tissue_mask, get_image_patches, resize_patch, normalize_patch, convert_patch_to_tensor
 
 
 class PatchDataset(Dataset):

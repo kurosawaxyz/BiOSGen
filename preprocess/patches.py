@@ -1,5 +1,3 @@
-import torch 
-import torch.nn as nn
 from PIL import Image
 
 import numpy as np
@@ -11,6 +9,11 @@ import cv2
 import matplotlib.patches as patches
 
 from .tissue_mask import GaussianTissueMask
+
+def read_image(
+    image_fpath: str
+) -> np.ndarray:
+    return np.array(Image.open(image_fpath))
 
 def get_tissue_mask(
     image: np.ndarray,
@@ -38,7 +41,7 @@ def get_image_patches(
     patch_threshold = int(patch_size * patch_size * patch_tissue_threshold)
     
     # image and tissue mask pre-processing
-    h, w, c = image.shape
+    h, w, _ = image.shape
     pad_b = patch_size - h % patch_size
     pad_r = patch_size - w % patch_size
     image_ = np.pad(image, ((0, pad_b), (0, pad_r), (0, 0)), mode='constant', constant_values=255)
