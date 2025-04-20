@@ -24,6 +24,22 @@ class Utilities:
     ) -> np.ndarray:
         with Image.open(image_fpath) as img:
             return np.array(img.convert(mode))
+
+    @staticmethod
+    def plot_image_1d(
+        image: np.ndarray, 
+        save_fpath: str = None, 
+        is_show: bool = True
+    ) -> None:
+        _, ax = plt.subplots()
+        ax.imshow(image)
+        plt.axis('off')
+        
+        if save_fpath is not None:
+            plt.savefig(save_fpath, bbox_inches='tight', pad_inches=0, dpi=600)
+
+        if is_show:
+            plt.show()
     
     @staticmethod
     def plot_image(
@@ -33,7 +49,8 @@ class Utilities:
     ) -> None:
         pil_img = Image.fromarray(image)
         
-        pil_img.save(save_fpath)
+        if save_fpath is not None:
+            pil_img.save(save_fpath)
 
         if is_show:
             # Notice: actually not working on server
@@ -99,18 +116,18 @@ class Utilities:
             ax.imshow(Image.fromarray(image_))
         
         # extract patches
-        patches = []
+        patch_lst = []
         for y in range(0, image_.shape[0], patch_size):
             for x in range(0, image_.shape[1], patch_size):
                 tissue_patch_ = tissue_mask_[y:y + patch_size, x:x + patch_size]
                 if np.sum(tissue_patch_) > patch_threshold:
-                    patches.append(image_[y:y + patch_size, x:x + patch_size])
+                    patch_lst.append(image_[y:y + patch_size, x:x + patch_size])
                     if is_visualize:
                         rect = patches.Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor='r', facecolor='none')
                         ax.add_patch(rect)
         if is_visualize:
             plt.show()
-        return patches
+        return patch_lst
     
     @staticmethod
     def plot_nuclei_labels(

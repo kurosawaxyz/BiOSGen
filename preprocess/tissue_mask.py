@@ -173,7 +173,7 @@ class GaussianTissueMask:
 
         # Detect tissue region
         while True:
-            _, mask_ = _get_tissue_mask(
+            _, mask_ = self._get_tissue_mask(
                 image,
                 n_thresholding_steps=self.n_thresholding_steps,
                 sigma=self.sigma,

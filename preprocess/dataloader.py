@@ -37,8 +37,8 @@ class AntibodiesTree:
         )
         # Create a tree structure
         self.antibodies = associations.columns
-        self.mask = associations.iloc[0]
-        self.npz = associations.iloc[1]
+        self.npz = associations.iloc[0]
+        self.mask = associations.iloc[1]
 
     def get_nb_antibodies(self) -> int:
         """
