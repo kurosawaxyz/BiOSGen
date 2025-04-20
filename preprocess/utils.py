@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
 import matplotlib.patches as patches
+import subprocess
+import os
 
 from .tissue_mask import GaussianTissueMask
 
@@ -17,9 +19,28 @@ class Utilities:
 
     @staticmethod
     def read_image(
-        image_fpath: str
+        image_fpath: str,
+        mode: str = "RGB"
     ) -> np.ndarray:
-        return np.array(Image.open(image_fpath))
+        with Image.open(image_fpath) as img:
+            return np.array(img.convert(mode))
+    
+    @staticmethod
+    def plot_image(
+        image: np.ndarray, 
+        save_fpath: str = None, 
+        is_show: bool = True
+    ) -> None:
+        pil_img = Image.fromarray(image)
+        
+        pil_img.save(save_fpath)
+
+        if is_show:
+            # Notice: actually not working on server
+            try:
+                subprocess.run(['xdg-open', save_fpath], check=True)
+            except Exception as e:
+                print(f"Could not open image viewer: {e}")
     
     @staticmethod
     def resize_patch(

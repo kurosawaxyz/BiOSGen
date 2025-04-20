@@ -1,5 +1,6 @@
 from preprocess import * 
 
+
 tree = AntibodiesTree(
     image_dir="/root/BiOSGen/data/HE",
     mask_dir="/root/BiOSGen/data/tissue_masks/HE",
@@ -9,3 +10,10 @@ tree = AntibodiesTree(
 
 # Test utility functions
 util = Utilities()
+img = util.read_image(
+    tree.antibodies[0]
+)
+
+print("plot image")
+util.plot_image(img, save_fpath="archive/test.png", is_show=True)
+print("plot image done")

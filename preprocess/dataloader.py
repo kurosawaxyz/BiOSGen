@@ -109,10 +109,14 @@ def split_data(
         matching_mask = next((mask for mask in mask_files if mask.startswith(base_name + '_')), None)
 
         if matching_npz is not None and matching_mask is not None:
-            associations[image_file] = {
-                'npz': matching_npz,
-                'mask': matching_mask
+            associations[os.path.join(image_dir, image_file)] = {
+                'npz': os.path.join(npz_dir, matching_npz),
+                'mask': os.path.join(mask_dir, matching_mask)
             }
+            # associations[image_file] = {
+            #     'npz': matching_npz,
+            #     'mask': matching_mask
+            # }
         else: continue
 
     # Convert to DataFrame
