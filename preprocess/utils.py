@@ -112,7 +112,7 @@ class Utilities:
         tissue_mask_ = np.pad(tissue_mask, ((0, pad_b), (0, pad_r)), mode='constant', constant_values=0)
         
         if is_visualize:
-            fig, ax = plt.subplots()
+            _, ax = plt.subplots()
             ax.imshow(Image.fromarray(image_))
         
         # extract patches
@@ -139,7 +139,7 @@ class Utilities:
             0 : 'r',    # NEG nuclei
             1 : 'b'     # POS nuclei
         }
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.imshow(Image.fromarray(image))
 
         for k in range(bbox_info.shape[0]):
