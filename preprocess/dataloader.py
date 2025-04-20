@@ -1,11 +1,84 @@
 import os
 import pandas as pd 
 
+
+class AntibodiesTree:
+    def __init__(
+            self,
+            image_dir: str,
+            mask_dir: str,
+            npz_dir: str
+    ):
+        """
+        Initialize the AntibodiesTree class.
+
+        Args:
+            image_dir (str): Directory containing images.
+            mask_dir (str): Directory containing masks.
+            npz_dir (str): Directory containing npz files.
+        """
+        self.image_dir = image_dir
+        self.mask_dir = mask_dir
+        self.npz_dir = npz_dir
+        self._construct_tree()
+
+    def _construct_tree(self):
+        """
+        Construct the tree structure for the images, masks, and npz files.
+
+        Returns:
+            None
+        """
+        associations = split_data(
+            image_dir=self.image_dir,
+            mask_dir=self.mask_dir,
+            npz_dir=self.npz_dir,
+        )
+        # Create a tree structure
+        self.antibodies = associations.columns
+        self.mask = associations.mask
+        self.npz = associations.npz
+
+    def _get_nb_antibodies(self):
+        """
+        Get the number of antibodies.
+
+        Returns:
+            int: Number of antibodies.
+        """
+        return len(self.antibodies)
+
+    def _get_antibodies(self):
+        """
+        Get the list of antibodies.
+
+        Returns:
+            list: List of antibodies.
+        """
+        return self.antibodies
+    
+    def _get_mask(self):
+        """
+        Get the list of masks.
+
+        Returns:
+            list: List of masks.
+        """
+        return self.mask
+    def _get_npz(self):
+        """
+        Get the list of npz files.
+        Returns:
+            list: List of npz files.
+        """
+        return self.npz
+
+
 def split_data(
     image_dir: str,
     mask_dir: str,
     npz_dir: str,
-    output_dir: str,
+    output_dir: str = None,
 ):
     """
     Summarize + associate the data in the image and mask directories
@@ -42,6 +115,7 @@ def split_data(
         else: continue
 
     # Convert to DataFrame
-    df = pd.DataFrame(associations)
-    df.to_csv(output_dir, index=False)
-    print("Data associations saved to data_associations.csv")
+    if output_dir is not None: 
+        df = pd.DataFrame(associations)
+        df.to_csv(output_dir, index=False)
+        print("Data associations saved to data_associations.csv")
