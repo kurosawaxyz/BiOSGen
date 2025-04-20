@@ -37,8 +37,8 @@ class AntibodiesTree:
         )
         # Create a tree structure
         self.antibodies = associations.columns
-        self.mask = associations.mask
-        self.npz = associations.npz
+        self.mask = associations.iloc[0]
+        self.npz = associations.iloc[1]
 
     def get_nb_antibodies(self) -> int:
         """
@@ -120,3 +120,5 @@ def split_data(
         df = pd.DataFrame(associations)
         df.to_csv(output_dir, index=False)
         print("Data associations saved to data_associations.csv")
+
+    return pd.DataFrame(associations)
