@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
 import os
 import pandas as pd 
 from typing import List
@@ -9,7 +12,7 @@ class AntibodiesTree:
             image_dir: str,
             mask_dir: str,
             npz_dir: str
-    ):
+    ) -> None:
         """
         Initialize the AntibodiesTree class.
 

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
 import math
 from typing import Tuple
 
