@@ -7,7 +7,7 @@ from typing import List
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
-import matplotlib.patches as patches
+from matplotlib.patches import Rectangle
 import subprocess
 import os
 
@@ -116,18 +116,18 @@ class Utilities:
             ax.imshow(Image.fromarray(image_))
         
         # extract patches
-        patch_lst = []
+        patches = []
         for y in range(0, image_.shape[0], patch_size):
             for x in range(0, image_.shape[1], patch_size):
                 tissue_patch_ = tissue_mask_[y:y + patch_size, x:x + patch_size]
                 if np.sum(tissue_patch_) > patch_threshold:
-                    patch_lst.append(image_[y:y + patch_size, x:x + patch_size])
+                    patches.append(image_[y:y + patch_size, x:x + patch_size])
                     if is_visualize:
-                        rect = patches.Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor='r', facecolor='none')
+                        rect = Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor='r', facecolor='none')
                         ax.add_patch(rect)
         if is_visualize:
             plt.show()
-        return patch_lst
+        return patches
     
     @staticmethod
     def plot_nuclei_labels(
