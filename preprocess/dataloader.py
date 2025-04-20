@@ -1,5 +1,6 @@
 import os
 import pandas as pd 
+from typing import List
 
 
 class AntibodiesTree:
@@ -22,7 +23,7 @@ class AntibodiesTree:
         self.npz_dir = npz_dir
         self._construct_tree()
 
-    def _construct_tree(self):
+    def _construct_tree(self) -> None:
         """
         Construct the tree structure for the images, masks, and npz files.
 
@@ -39,7 +40,7 @@ class AntibodiesTree:
         self.mask = associations.mask
         self.npz = associations.npz
 
-    def _get_nb_antibodies(self):
+    def get_nb_antibodies(self) -> int:
         """
         Get the number of antibodies.
 
@@ -48,7 +49,7 @@ class AntibodiesTree:
         """
         return len(self.antibodies)
 
-    def _get_antibodies(self):
+    def get_antibodies(self) -> List[str]:
         """
         Get the list of antibodies.
 
@@ -57,7 +58,7 @@ class AntibodiesTree:
         """
         return self.antibodies
     
-    def _get_mask(self):
+    def get_mask(self) -> List[str]:
         """
         Get the list of masks.
 
@@ -65,7 +66,7 @@ class AntibodiesTree:
             list: List of masks.
         """
         return self.mask
-    def _get_npz(self):
+    def get_npz(self) -> List[str]:
         """
         Get the list of npz files.
         Returns:
@@ -79,7 +80,7 @@ def split_data(
     mask_dir: str,
     npz_dir: str,
     output_dir: str = None,
-):
+) -> None:
     """
     Summarize + associate the data in the image and mask directories
 
