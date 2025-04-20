@@ -1,9 +1,10 @@
 from PIL import Image
+import torch 
+from transformers import AutoModelForCausalLM 
 
 import numpy as np
 from typing import List
 import matplotlib.pyplot as plt
-import matplotlib
 from PIL import Image
 import cv2
 import matplotlib.patches as patches
@@ -95,7 +96,7 @@ class Utilities:
         image: np.ndarray, 
         bbox_info: np.ndarray = None,
         save_fpath: str = None
-    ):
+    ) -> None:
         color_palette = {
             0 : 'r',    # NEG nuclei
             1 : 'b'     # POS nuclei
@@ -110,3 +111,38 @@ class Utilities:
         
         if save_fpath is not None:
             plt.savefig(save_fpath, dpi=600)
+
+    @staticmethod
+    def describe_img(
+        image_path: str,
+        device: str = "cuda"
+    ) -> str:
+        img = Image.open(image_path)
+        model = load_md(device)
+        enc_image = model.encode_image(img)
+        desc = model.query(enc_image, "Describe this image.\n")
+        print("Description: ", desc)
+        return desc
+
+
+
+# moondream
+def load_md(
+    device: str = "cuda"
+) -> AutoModelForCausalLM:
+    """
+    Load the moondream model for image processing.
+    Args:
+        device (str): Device to load the model on. Default is "cuda".
+    Returns:
+        AutoModelForCausalLM: Loaded moondream model.
+
+    Caution: device + type must be same as the one used to train the model.
+    """
+    device = torch.device(device)
+    model = AutoModelForCausalLM.from_pretrained(
+        "vikhyatk/moondream2",
+        revision="2025-01-09",
+        trust_remote_code=True,
+    ).to(device)
+    return model
