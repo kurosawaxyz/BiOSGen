@@ -21,4 +21,7 @@ def main():
 if __name__ == "__main__":
     main()
 
+
+# Data installation
+# HE data
 # python -m scripts.load_data --url https://figshare.com/ndownloader/files/51023045 --output /root/BiOSGen/data/bbox.zip
