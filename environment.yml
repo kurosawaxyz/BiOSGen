@@ -34,9 +34,9 @@ dependencies:
       # - onnxruntime     # work for Mac but not for Linux (currently use Linux)
       - onnxruntime-gpu
 
-  - conda:
+  - conda:                # -> to be installed with conda-forge
     - libvips
     - glib
-    - cmake  # CMake for ONNX building
-    - protobuf  # Protobuf for ONNX building
+    - cmake               # CMake for ONNX building
+    - protobuf            # Protobuf for ONNX building
     - onnx
