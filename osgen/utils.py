@@ -1,17 +1,28 @@
 # -*- coding: utf-8 -*-
 # @Author: H. T. Duong Vu
 
-class ModelOverview:
+import numpy as np
+import torch
+import torch.nn as nn
+
+class Utilities:
     """
-    A class to provide an overview of a PyTorch model.
-    It includes the model's architecture, number of parameters, and a summary.
+    A class containing utility functions for model operations.
     """
     def __init__(self):
         pass
 
-    def get_model_summary(self, model) -> str:
+    @staticmethod
+    def load_model(model, path: str) -> None:
         """
-        Generate a summary of the model architecture and number of parameters.
+        Load a model from a specified path.
         """
-        model_summary = str(model)
-        return model_summary
+        model.load_state_dict(torch.load(path))
+        model.eval()
+    
+    @staticmethod
+    def convert_numpy_to_tensor(array: np.ndarray) -> torch.Tensor:
+        """
+        Convert a NumPy array to a PyTorch tensor.
+        """
+        return torch.from_numpy(array).float()

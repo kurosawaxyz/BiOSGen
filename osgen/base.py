@@ -1,0 +1,78 @@
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
+import torch 
+import torch.nn as nn
+from torchvision import transforms
+from typing import List
+from PIL import Image
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_theme(style="darkgrid")
+
+class BaseModel(nn.Module):
+    """
+    Base class for all models.
+    """
+    def __init__(
+            self, 
+            device: str = 'cuda' if torch.cuda.is_available() else 'cpu', 
+            **kwargs
+    ) -> None:
+        super().__init__()
+        self.device = device
+        self.to(device)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the model.
+        """
+        raise NotImplementedError("Forward method not implemented in base class.")
+
+    def get_model_summary(self) -> str:
+        """
+        Generate a summary of the model architecture and number of parameters.
+        """
+        model_summary = str(self)
+        return model_summary
+    
+    def get_num_parameters(self) -> int:
+        """
+        Calculate the total number of parameters in the model.
+        """
+        num_params = sum(p.numel() for p in self.parameters())
+        return num_params
+
+    def features_visualization(
+        self,
+        image: Image.Image,
+        num_maps: int = 6,
+        mean: List[float] = [0.485, 0.456, 0.406],
+        std: List[float] = [0.229, 0.224, 0.225],
+        size: int = 512,
+        save_path: str = None,
+        show: bool = False
+    ) -> None:
+        transform = transforms.Compose([
+            transforms.Resize((size, size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ])
+        # Convert PIL image to tensor
+        img_tensor = transform(image).unsqueeze(0)
+        with torch.no_grad():
+            features = self(img_tensor.to(self.device))
+
+        feature_maps = features.squeeze(0).cpu().numpy()  # Shape: [2048, 7, 7]
+        fig, axs = plt.subplots(1, num_maps, figsize=(15, 5))
+        for i in range(num_maps):
+            axs[i].imshow(feature_maps[i], cmap='viridis')
+            axs[i].axis('off')
+            axs[i].set_title(f'Feature {i}')
+        plt.tight_layout()
+
+        if save_path is not None:
+            plt.savefig(save_path, bbox_inches='tight', pad_inches=0, dpi=600)
+
+        if show:
+            plt.show()
