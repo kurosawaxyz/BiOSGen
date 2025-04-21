@@ -9,6 +9,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme(style="darkgrid")
+from torchviz import make_dot
 
 class BaseModel(nn.Module):
     """
@@ -28,6 +29,18 @@ class BaseModel(nn.Module):
         Forward pass through the model.
         """
         raise NotImplementedError("Forward method not implemented in base class.")
+    
+    def visualize_network(
+        self,
+        x: torch.Tensor,
+    ) -> None:
+        """
+        Visualize the model architecture and parameters.
+        """
+        # Do not double convert tensor to device
+        y = self(x)
+        dot = make_dot(y, params=dict(list(self.named_parameters()) + [('x', x)]))
+        dot.render(f"model_architecture_{self.__class__.__name__}", format="png")
 
     def get_model_summary(self) -> str:
         """
@@ -43,7 +56,7 @@ class BaseModel(nn.Module):
         num_params = sum(p.numel() for p in self.parameters())
         return num_params
 
-    def visualize_feature_maps(
+    def preview_visualize_feature_maps(
         self,
         image: Image.Image,
         num_maps: int = 6,

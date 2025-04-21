@@ -33,6 +33,7 @@ dependencies:
       # - onnx            # work for Linux but not for Mac (currently use Linux)
       # - onnxruntime     # work for Mac but not for Linux (currently use Linux)
       - onnxruntime-gpu
+      - torchviz
 
   - conda:                # -> to be installed with conda-forge
     - libvips
