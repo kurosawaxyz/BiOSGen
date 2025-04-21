@@ -16,7 +16,7 @@ import os
 
 from .tissue_mask import GaussianTissueMask
 
-class Utilities:
+class PatchesUtilities:
     def __init__(self):
         pass
 
@@ -147,7 +147,7 @@ class Utilities:
 
         for k in range(bbox_info.shape[0]):
             y0, x0, y1, x1, label = bbox_info[k]
-            rect = patches.Rectangle((x0, y0), x1 - x0, y1 - y0, linewidth=0.5, edgecolor=color_palette[label], facecolor='none')
+            rect = Rectangle((x0, y0), x1 - x0, y1 - y0, linewidth=0.5, edgecolor=color_palette[label], facecolor='none')
             ax.add_patch(rect)
         
         if save_fpath is not None:

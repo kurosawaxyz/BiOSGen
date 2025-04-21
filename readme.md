@@ -73,6 +73,16 @@ conda activate biosgen
 ```bash
 conda create -n biosgen
 conda activate biosgen
+
+# Wheels for onnx need to be installed with conda-forge
+conda install -c conda-forge \
+  libvips \
+  glib \
+  cmake \
+  protobuf \
+  onnx
+
+# pip can be missing on higher python version (>=3.10)
 conda install pip                 
 pip install -r requirements.txt
 ```
@@ -101,6 +111,15 @@ pip install -r requirements.txt
 
 
 ### Data installation
+
+#### Install train-test data
+
+```bash
+mkdir data
+chmod +x scripts/data_installer.sh
+./scripts/data_installer.sh
+```
+
 >**Note**: Data installation instruction for the EMPaCT dataset provided by [AI4SCR](https://github.com/AI4SCR/VirtualMultiplexer)
 #### Downloading the EMPaCT dataset 
 

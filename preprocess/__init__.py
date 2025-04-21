@@ -3,4 +3,4 @@
 
 from preprocess.dataloader import AntibodiesTree
 from preprocess.tissue_mask import GaussianTissueMask
-from preprocess.utils import Utilities
+from preprocess.patches_utils import PatchesUtilities

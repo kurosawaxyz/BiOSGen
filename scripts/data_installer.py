@@ -24,4 +24,13 @@ if __name__ == "__main__":
 
 # Data installation
 # HE data
-# python -m scripts.load_data --url https://figshare.com/ndownloader/files/51023045 --output /root/BiOSGen/data/bbox.zip
+# python -m scripts.data_installer --url https://zenodo.org/records/10066853/files/HE_zenodo.zip?download=1 --output /root/BiOSGen/data/HE.zip
+
+# NKX3 data
+# python -m scripts.data_installer --url https://zenodo.org/records/10066853/files/NKX3_zenodo.zip?download=1 --output /root/BiOSGen/data/NKX3.zip
+
+# Tissue mask
+# python -m scripts.data_installer --url https://figshare.com/ndownloader/files/51023048 --output /root/BiOSGen/data/tissue_mask.zip
+
+# Bbox
+# python -m scripts.data_installer --url https://figshare.com/ndownloader/files/51023045 --output /root/BiOSGen/data/bbox.zip

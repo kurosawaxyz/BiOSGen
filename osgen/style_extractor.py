@@ -7,7 +7,9 @@ from torchvision.models import resnet50
 from PIL import Image
 import numpy as np
 
-class StyleExtractor(nn.Module):
+from osgen.base import BaseModel
+
+class StyleExtractor(BaseModel):
     """
     Style extractor using Resnet50-based architecture.
     """
@@ -40,3 +42,11 @@ class StyleExtractor(nn.Module):
         # Load ResNet50 model
         self.resnet = list(resnet50(pretrained=True).children())[:-2]
         self.resnet = nn.Sequential(*self.resnet)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the model.
+        """
+        x = self.resnet(x)
+        x = self.activation(x)
+        return x
