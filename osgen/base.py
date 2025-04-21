@@ -61,7 +61,7 @@ class BaseModel(nn.Module):
         # Convert PIL image to tensor
         img_tensor = transform(image).unsqueeze(0)
         with torch.no_grad():
-            features = self(img_tensor)
+            features = self(img_tensor)             # do not convert img_tensor to device, not working 
 
         feature_maps = features.squeeze(0).cpu().numpy()
         _, axs = plt.subplots(1, num_maps, figsize=(15, 5))
