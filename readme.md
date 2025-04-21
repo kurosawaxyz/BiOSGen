@@ -69,6 +69,14 @@ conda env create -f environment.yml -k
 conda activate biosgen
 ```
 
+#### Alternative
+```bash
+conda create -n biosgen
+conda activate biosgen
+conda install pip                 
+pip install -r requirements.txt
+```
+
 #### Important notice
 **Warning**:
 
