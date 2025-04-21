@@ -48,5 +48,5 @@ class StyleExtractor(BaseModel):
         Forward pass through the model.
         """
         x = self.resnet(x)
-        x = self.activation(x)
+        # x = self.activation(x)
         return x

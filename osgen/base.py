@@ -43,7 +43,7 @@ class BaseModel(nn.Module):
         num_params = sum(p.numel() for p in self.parameters())
         return num_params
 
-    def features_visualization(
+    def visualize_feature_maps(
         self,
         image: Image.Image,
         num_maps: int = 6,
@@ -61,10 +61,10 @@ class BaseModel(nn.Module):
         # Convert PIL image to tensor
         img_tensor = transform(image).unsqueeze(0)
         with torch.no_grad():
-            features = self(img_tensor.to(self.device))
+            features = self(img_tensor)
 
-        feature_maps = features.squeeze(0).cpu().numpy()  # Shape: [2048, 7, 7]
-        fig, axs = plt.subplots(1, num_maps, figsize=(15, 5))
+        feature_maps = features.squeeze(0).cpu().numpy()
+        _, axs = plt.subplots(1, num_maps, figsize=(15, 5))
         for i in range(num_maps):
             axs[i].imshow(feature_maps[i], cmap='viridis')
             axs[i].axis('off')
