@@ -4,8 +4,6 @@
 import torch 
 import torch.nn as nn
 from torchvision.models import resnet50
-from PIL import Image
-import numpy as np
 import loralib as lora
 
 from osgen.base import BaseModel
@@ -28,7 +26,7 @@ class StyleExtractor(BaseModel):
         use_pretrained: bool = True,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
         lora_rank: int = 16,
-        is_trainable: bool = True,
+        use_lora: bool = False,             # we don't use lora for style extraction
         **kwargs
     ) -> None:
         super().__init__()
@@ -54,7 +52,10 @@ class StyleExtractor(BaseModel):
         self.resnet = nn.Sequential(*list(resnet.children())[:-2])  # output: (B, 2048, H/32, W/32)
 
         # Conv2d layer to reduce channel depth
-        self.conv2d = lora.Conv2d(2048, 256, kernel_size=1, r=lora_rank)
+        if use_lora: 
+            self.conv2d = lora.Conv2d(2048, 256, kernel_size=1, r=lora_rank)
+        else: 
+            self.conv2d = nn.Conv2d(2048, 256, kernel_size=1, bias=False)
 
         # Dynamically determine flattened size
         with torch.no_grad():
@@ -63,12 +64,17 @@ class StyleExtractor(BaseModel):
             flattened_dim = dummy_output.view(1, -1).shape[1]  # e.g. (1, C*H*W)
 
         self.flatten = nn.Flatten()
-        self.dense1 = lora.Linear(flattened_dim, 256, r=lora_rank)
-        self.dense2 = lora.Linear(256, 18 * 512, r=lora_rank)
+        
+        if use_lora:
+            self.dense1 = lora.Linear(flattened_dim, 256, r=lora_rank)
+            self.dense2 = lora.Linear(256, 18 * 512, r=lora_rank)
+        else: 
+            self.dense1 = nn.Linear(flattened_dim, 256)
+            self.dense2 = nn.Linear(256, 18 * 512)
         self.dropout = nn.Dropout(0.5)
 
-        if is_trainable:
-            lora.mark_only_lora_as_trainable(self, bias='lora_only')
+        # if is_trainable:
+        #     lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
     def forward(self, image):
         x = self.resnet(image)         # (B, 2048, H/32, W/32)
@@ -79,3 +85,7 @@ class StyleExtractor(BaseModel):
         x = self.dense2(x)             # (B, 9216)
         x = x.view(-1, 18, 512)        # (B, 18, 512)
         return x
+    
+
+class PositionalEmbedding(BaseModel):
+    pass

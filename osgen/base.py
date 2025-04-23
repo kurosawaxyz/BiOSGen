@@ -8,8 +8,9 @@ from typing import List
 from PIL import Image
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_theme(style="darkgrid")
+sns.set(style="darkgrid", palette="deep")
 from torchviz import make_dot
+import loralib as lora
 
 class BaseModel(nn.Module):
     """
@@ -23,6 +24,13 @@ class BaseModel(nn.Module):
         super().__init__()
         self.device = device
         self.to(device)
+
+    def train(self):
+        """
+        Placeholder method for training the model.
+        """
+        lora.mark_only_lora_as_trainable(self, bias='lora_only')
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

@@ -25,4 +25,11 @@ class Utilities:
         """
         Convert a NumPy array to a PyTorch tensor.
         """
-        return torch.from_numpy(array).float()
+        return torch.from_numpy(array).float().permute(2,0,1).unsqueeze(0)
+
+    @staticmethod
+    def convert_tensor_to_numpy(tensor: torch.Tensor) -> np.ndarray:
+        """
+        Convert a PyTorch tensor to a NumPy array.
+        """
+        return tensor.cpu().detach().numpy()
