@@ -26,8 +26,8 @@ class VanillaVAE(BaseModel):
 
         # --- Build Encoder ---
         modules = []
-        hidden_dims = [32, 64, 128, 256, 512]
-        in_channels = 3
+        if hidden_dims is None:
+            hidden_dims = [32, 64]
 
         for h_dim in hidden_dims:
             modules.append(
@@ -40,8 +40,23 @@ class VanillaVAE(BaseModel):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+        # Convolution to reduce to latent channels (with LoRA)
+        self.conv_mu = nn.Conv2d(
+            in_channels=in_channels, 
+            out_channels=latent_dim, 
+            kernel_size=1, 
+            stride=1, 
+            padding=0,
+        )
+        self.conv_logvar = nn.Conv2d(
+            in_channels=in_channels, 
+            out_channels=latent_dim, 
+            kernel_size=1, 
+            stride=1, 
+            padding=0,
+            )
+        # self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+        # self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
 
 
 
@@ -90,12 +105,12 @@ class VanillaVAE(BaseModel):
         :return: (Tensor) List of latent codes
         """
         result = self.encoder(input)
-        result = torch.flatten(result, start_dim=1)
+        # result = torch.flatten(result, start_dim=1)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
+        mu = self.conv_mu(result)
+        log_var = self.conv_logvar(result)
 
         return [mu, log_var]
 
