@@ -235,6 +235,7 @@ class VanillaEncoder(VanillaVAE):
     
 class VanillaDecoder(VanillaVAE):
     """
+    Note: review later
     Decoder part of the Vanilla VAE.
     """
 
