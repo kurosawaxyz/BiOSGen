@@ -3,7 +3,6 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
 
 class Utilities:
     """
@@ -33,3 +32,10 @@ class Utilities:
         Convert a PyTorch tensor to a NumPy array.
         """
         return tensor.cpu().detach().numpy()
+    
+    @staticmethod
+    def convert_to_float32(tensor: torch.Tensor) -> torch.Tensor:
+        """
+        Convert a tensor to float32.
+        """
+        return tensor.to(torch.float32)

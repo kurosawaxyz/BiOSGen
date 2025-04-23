@@ -1,10 +1,15 @@
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from abc import ABC, abstractmethod
 import loralib as lora
-
 import math
+
+from osgen.base import BaseModel
+from osgen.utils import Utilities
 
 
 def timestep_embedding(timesteps, dim, max_period=10000):
@@ -29,7 +34,7 @@ def timestep_embedding(timesteps, dim, max_period=10000):
 
 
 # Class: TimestepBlock
-class TimestepBlock(nn.Module, ABC):
+class TimestepBlock(BaseModel, ABC):
     """
     Any module where forward() takes timestep embeddings as a second argument.
     """
@@ -48,6 +53,8 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
 
     def forward(self, x, emb):
+        x = Utilities.convert_to_float32(x)
+        emb = Utilities.convert_to_float32(emb)
         for layer in self:
             if isinstance(layer, TimestepBlock) or type(layer).__name__ in ["ResBlock", "CrossAttentionStyleFusion"]:
                 x = layer(x, emb)
@@ -56,7 +63,7 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
         return x
     
 # Class: Attention
-class AbstractAttention(nn.Module, ABC):
+class AbstractAttention(BaseModel, ABC):
     @abstractmethod
     def forward(self, x):
         pass
@@ -82,6 +89,9 @@ class CrossAttentionStyleFusion(AbstractAttention):
 
         
     def forward(self, x, cond):
+        # Convert inputs to float32
+        x = Utilities.convert_to_float32(x)
+        cond = Utilities.convert_to_float32(cond)
         # x: [B, 4, H, W], cond: [B, 256]
         B, C, H, W = x.shape
         
@@ -105,41 +115,43 @@ class CrossAttentionStyleFusion(AbstractAttention):
         return x + self.proj_out(h)
     
 # Class: Upsample
-class Upsample(nn.Module):
+class Upsample(BaseModel):
     def __init__(
         self,
         in_channels: int,
         use_conv: bool = True,
         out_channels: int = None,
-        is_trainable: bool = True,
-        lora_rank: int = 16,
         *args,
         **kwargs
     ):
+        """
+        Upsample layer that can optionally include a convolutional layer.
+        Args:
+            in_channels (int): Number of input channels.
+            use_conv (bool): Whether to use a convolutional layer after upsampling.
+            out_channels (int): Number of output channels. If None, defaults to in_channels.
+        """
         super().__init__()
         self.use_conv = use_conv
         self.in_channels = in_channels
         self.out_channels = out_channels or in_channels
         if use_conv:
-            self.conv = lora.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1, r=lora_rank)
-        if is_trainable:
-            lora.mark_only_lora_as_trainable(self, bias='lora_only')
-
+            self.conv = nn.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1)
+        
     def forward(self, x):
+        x = Utilities.convert_to_float32(x)
         x = F.interpolate(x, scale_factor=2, mode="nearest")
         if self.use_conv:
             x = self.conv(x)
         return x
     
 # Class: Downsample
-class Downsample(nn.Module):
+class Downsample(BaseModel):
     def __init__(
         self,
         in_channels: int,
         use_conv: bool = True,
         out_channels: int = None,
-        is_trainable: bool = True,
-        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -149,23 +161,22 @@ class Downsample(nn.Module):
         self.out_channels = out_channels or in_channels
         stride = 2
         if use_conv:
-            self.op = lora.Conv2d(
+            self.op = nn.Conv2d(
                 in_channels, 
                 self.out_channels, 
                 kernel_size=3, 
                 stride=stride,
                 padding=1,
-                r=lora_rank)
+                )
         else:
             self.op = nn.AvgPool2d(kernel_size=stride, stride=stride)
 
-        if is_trainable:
-            lora.mark_only_lora_as_trainable(self, bias='lora_only')
-
     def forward(self, x):
+        x = Utilities.convert_to_float32(x)
         return self.op(x)
     
-class ResBlock(nn.Module):
+
+class ResBlock(BaseModel):
     def __init__(
         self,
         emb_channels: int,
@@ -177,9 +188,6 @@ class ResBlock(nn.Module):
         down=False,
         use_scale_shift_norm=False,
         device=None,
-        dtype=torch.float32,
-        is_trainable: bool = True,
-        lora_rank: int = 16,
         *args,
         **kwargs
     ):
@@ -198,7 +206,6 @@ class ResBlock(nn.Module):
         
         # Explicitly set device and dtype
         self.device = device or torch.device('cpu')
-        self.dtype = dtype
 
         # Define layers
         # Layer 1
@@ -206,17 +213,14 @@ class ResBlock(nn.Module):
             nn.BatchNorm2d(
                 self.in_channels, 
                 device=self.device, 
-                dtype=self.dtype
             ),
-            nn.SiLU(),
+            nn.ReLU(),
             lora.Conv2d(
                 self.in_channels, 
                 self.out_channels, 
                 kernel_size=3, 
                 padding=1,
                 device=self.device,
-                dtype=self.dtype,
-                r=lora_rank
             )  
         )
 
@@ -227,18 +231,12 @@ class ResBlock(nn.Module):
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype,
-                is_trainable=is_trainable,
-                lora_rank=lora_rank
             )
             self.x_upd = Upsample(
                 in_channels, 
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype,
-                is_trainable=is_trainable,
-                lora_rank=lora_rank
             )
         elif down:
             self.h_upd = Downsample(
@@ -246,30 +244,22 @@ class ResBlock(nn.Module):
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype,
-                is_trainable=is_trainable,
-                lora_rank=lora_rank
             )
             self.x_upd = Downsample(
                 in_channels, 
                 use_conv, 
                 out_channels, 
                 device=self.device, 
-                dtype=self.dtype,
-                is_trainable=is_trainable,
-                lora_rank=lora_rank
             )
         else:
             self.h_upd = self.x_upd = nn.Identity()
 
         self.emb_layers = nn.Sequential(
-            nn.SiLU(),
+            nn.ReLU(),
             lora.Linear(
                 emb_channels, 
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
                 device=self.device,
-                dtype=self.dtype,
-                r = lora_rank
             )
         )
 
@@ -278,9 +268,8 @@ class ResBlock(nn.Module):
             nn.BatchNorm2d(
                 self.out_channels, 
                 device=self.device, 
-                dtype=self.dtype
             ), 
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Dropout(p=dropout),
             lora.Conv2d(
                 self.out_channels, 
@@ -288,8 +277,6 @@ class ResBlock(nn.Module):
                 kernel_size=3, 
                 padding=1,
                 device=self.device,
-                dtype=self.dtype,
-                r = lora_rank
             )
         )
 
@@ -302,13 +289,12 @@ class ResBlock(nn.Module):
                 self.out_channels, 
                 kernel_size=1,
                 device=self.device,
-                dtype=self.dtype,
-                r = lora_rank
             )
-        if is_trainable:
-            lora.mark_only_lora_as_trainable(self, bias='lora_only')
+
 
     def forward(self, x, emb):
+        x = Utilities.convert_to_float32(x)
+        emb = Utilities.convert_to_float32(emb)
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             h = in_rest(x)
@@ -318,7 +304,7 @@ class ResBlock(nn.Module):
         else:
             h = self.in_layers(x)
 
-        emb_out = self.emb_layers(emb).type(h.dtype)
+        emb_out = self.emb_layers(emb)
 
         if self.use_scale_shift_norm:
             out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
