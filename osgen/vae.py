@@ -58,6 +58,7 @@ class VanillaVAE(BaseModel):
         # self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
         # self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
 
+        self.noise_predictor = nn.Conv2d(latent_dim, latent_dim, kernel_size=3, padding=1)
 
 
         # Build Decoder
@@ -127,7 +128,7 @@ class VanillaVAE(BaseModel):
         result = self.final_layer(result)
         return result
 
-    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+    def reparameterize(self, mu: Tensor, logvar: Tensor, kernel_size=3) -> Tensor:
         """
         Reparameterization trick to sample from N(mu, var) from
         N(0,1).
@@ -137,6 +138,16 @@ class VanillaVAE(BaseModel):
         """
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
+
+        # Apply smoothing (like a Gaussian blur)
+        eps = F.avg_pool2d(eps, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
+
+        return eps * std + mu
+
+    def reparameterize_learned(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        # Instead of random noise, learn noise shape
+        eps = self.noise_predictor(mu)
         return eps * std + mu
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
@@ -203,8 +214,10 @@ class VanillaEncoder(VanillaVAE):
                  in_channels: int,
                  latent_dim: int,
                  hidden_dims: List = None,
+                 learned: bool = True,
                  **kwargs) -> None:
         super(VanillaEncoder, self).__init__(in_channels, latent_dim, hidden_dims, **kwargs)
+        self.learned = learned
 
     def forward(self, input: Tensor, **kwargs) -> Tensor:
         """
@@ -214,7 +227,10 @@ class VanillaEncoder(VanillaVAE):
         :return: (Tensor) List of latent codes
         """
         mu, log_var = self.encode(input)
-        z = self.reparameterize(mu, log_var)
+        if self.learned:
+            z = self.reparameterize_learned(mu, log_var)
+        else:
+            z = self.reparameterize(mu, log_var)
         return z
     
 class VanillaDecoder(VanillaVAE):
