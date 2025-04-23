@@ -40,14 +40,15 @@ class VanillaVAE(BaseModel):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
+        self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+
 
 
         # Build Decoder
         modules = []
 
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 16 * 16)
 
         hidden_dims.reverse()
 
@@ -106,7 +107,7 @@ class VanillaVAE(BaseModel):
         :return: (Tensor) [B x C x H x W]
         """
         result = self.decoder_input(z)
-        result = result.view(-1, 512, 2, 2)
+        result = result.view(-1, 512, 16, 16)
         result = self.decoder(result)
         result = self.final_layer(result)
         return result
@@ -124,9 +125,15 @@ class VanillaVAE(BaseModel):
         return eps * std + mu
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
+        """
+        Performs the forward pass of the VAE, including encoding,
+        reparameterization, and decoding.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of tensors [reconstructed, input, mu, log_var]
+        """
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
-        return  [self.decode(z), input, mu, log_var]
+        return [self.decode(z), input, mu, log_var]
 
     def loss_function(self,
                       *args,
@@ -170,11 +177,47 @@ class VanillaVAE(BaseModel):
         samples = self.decode(z)
         return samples
 
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
-        """
-        Given an input image x, returns the reconstructed image
-        :param x: (Tensor) [B x C x H x W]
-        :return: (Tensor) [B x C x H x W]
-        """
 
-        return self.forward(x)[0]
+
+class VanillaEncoder(VanillaVAE):
+    """
+    Encoder part of the Vanilla VAE + reparameterization trick.
+    """
+
+    def __init__(self,
+                 in_channels: int,
+                 latent_dim: int,
+                 hidden_dims: List = None,
+                 **kwargs) -> None:
+        super(VanillaEncoder, self).__init__(in_channels, latent_dim, hidden_dims, **kwargs)
+
+    def forward(self, input: Tensor, **kwargs) -> Tensor:
+        """
+        Encodes the input by passing through the encoder network
+        and returns the latent codes.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+        mu, log_var = self.encode(input)
+        z = self.reparameterize(mu, log_var)
+        return z
+    
+class VanillaDecoder(VanillaVAE):
+    """
+    Decoder part of the Vanilla VAE.
+    """
+
+    def __init__(self,
+                 in_channels: int,
+                 latent_dim: int,
+                 hidden_dims: List = None,
+                 **kwargs) -> None:
+        super(VanillaDecoder, self).__init__(in_channels, latent_dim, hidden_dims, **kwargs)
+    def forward(self, input: Tensor, **kwargs) -> Tensor:
+        """
+        Maps the given latent codes
+        onto the image space.
+        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (Tensor) List of latent codes
+        """
+        return self.decode(input)

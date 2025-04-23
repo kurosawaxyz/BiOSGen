@@ -25,7 +25,7 @@ class BaseModel(nn.Module):
         self.device = device
         self.to(device)
 
-    def train(self):
+    def train(self, mode: bool = True) -> None:
         """
         Placeholder method for training the model.
         """
@@ -74,6 +74,11 @@ class BaseModel(nn.Module):
         save_path: str = None,
         show: bool = False
     ) -> None:
+        
+        """
+        Note: Do not use with Vanilla VAE, it will not work
+        """
+
         transform = transforms.Compose([
             transforms.Resize((size, size)),
             transforms.ToTensor(),
