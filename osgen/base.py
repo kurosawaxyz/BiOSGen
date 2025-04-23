@@ -8,7 +8,9 @@ from typing import List
 from PIL import Image
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_theme(style="darkgrid")
+sns.set(style="darkgrid", palette="deep")
+from torchviz import make_dot
+import loralib as lora
 
 class BaseModel(nn.Module):
     """
@@ -23,11 +25,30 @@ class BaseModel(nn.Module):
         self.device = device
         self.to(device)
 
+    def train(self, mode: bool = True) -> None:
+        """
+        Placeholder method for training the model.
+        """
+        lora.mark_only_lora_as_trainable(self, bias='lora_only')
+
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through the model.
         """
         raise NotImplementedError("Forward method not implemented in base class.")
+    
+    def visualize_network(
+        self,
+        x: torch.Tensor,
+    ) -> None:
+        """
+        Visualize the model architecture and parameters.
+        """
+        # Do not double convert tensor to device
+        y = self(x)
+        dot = make_dot(y, params=dict(list(self.named_parameters()) + [('x', x)]))
+        dot.render(f"model_architecture_{self.__class__.__name__}", format="png")
 
     def get_model_summary(self) -> str:
         """
@@ -43,7 +64,7 @@ class BaseModel(nn.Module):
         num_params = sum(p.numel() for p in self.parameters())
         return num_params
 
-    def visualize_feature_maps(
+    def preview_visualize_feature_maps(
         self,
         image: Image.Image,
         num_maps: int = 6,
@@ -53,6 +74,11 @@ class BaseModel(nn.Module):
         save_path: str = None,
         show: bool = False
     ) -> None:
+        
+        """
+        Note: Do not use with Vanilla VAE, it will not work
+        """
+
         transform = transforms.Compose([
             transforms.Resize((size, size)),
             transforms.ToTensor(),
