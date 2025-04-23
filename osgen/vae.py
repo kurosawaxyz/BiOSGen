@@ -26,8 +26,8 @@ class VanillaVAE(BaseModel):
 
         # --- Build Encoder ---
         modules = []
-        hidden_dims = [32, 64, 128, 256, 512]
-        in_channels = 3
+        if hidden_dims is None:
+            hidden_dims = [32, 64]
 
         for h_dim in hidden_dims:
             modules.append(
@@ -40,9 +40,25 @@ class VanillaVAE(BaseModel):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+        # Convolution to reduce to latent channels (with LoRA)
+        self.conv_mu = nn.Conv2d(
+            in_channels=in_channels, 
+            out_channels=latent_dim, 
+            kernel_size=1, 
+            stride=1, 
+            padding=0,
+        )
+        self.conv_logvar = nn.Conv2d(
+            in_channels=in_channels, 
+            out_channels=latent_dim, 
+            kernel_size=1, 
+            stride=1, 
+            padding=0,
+            )
+        # self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+        # self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
 
+        self.noise_predictor = nn.Conv2d(latent_dim, latent_dim, kernel_size=3, padding=1)
 
 
         # Build Decoder
@@ -90,12 +106,12 @@ class VanillaVAE(BaseModel):
         :return: (Tensor) List of latent codes
         """
         result = self.encoder(input)
-        result = torch.flatten(result, start_dim=1)
+        # result = torch.flatten(result, start_dim=1)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
+        mu = self.conv_mu(result)
+        log_var = self.conv_logvar(result)
 
         return [mu, log_var]
 
@@ -112,7 +128,7 @@ class VanillaVAE(BaseModel):
         result = self.final_layer(result)
         return result
 
-    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+    def reparameterize(self, mu: Tensor, logvar: Tensor, kernel_size=3) -> Tensor:
         """
         Reparameterization trick to sample from N(mu, var) from
         N(0,1).
@@ -122,6 +138,16 @@ class VanillaVAE(BaseModel):
         """
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
+
+        # Apply smoothing (like a Gaussian blur)
+        eps = F.avg_pool2d(eps, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
+
+        return eps * std + mu
+
+    def reparameterize_learned(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        # Instead of random noise, learn noise shape
+        eps = self.noise_predictor(mu)
         return eps * std + mu
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
@@ -188,8 +214,10 @@ class VanillaEncoder(VanillaVAE):
                  in_channels: int,
                  latent_dim: int,
                  hidden_dims: List = None,
+                 learned: bool = True,
                  **kwargs) -> None:
         super(VanillaEncoder, self).__init__(in_channels, latent_dim, hidden_dims, **kwargs)
+        self.learned = learned
 
     def forward(self, input: Tensor, **kwargs) -> Tensor:
         """
@@ -199,7 +227,10 @@ class VanillaEncoder(VanillaVAE):
         :return: (Tensor) List of latent codes
         """
         mu, log_var = self.encode(input)
-        z = self.reparameterize(mu, log_var)
+        if self.learned:
+            z = self.reparameterize_learned(mu, log_var)
+        else:
+            z = self.reparameterize(mu, log_var)
         return z
     
 class VanillaDecoder(VanillaVAE):
