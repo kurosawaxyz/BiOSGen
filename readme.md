@@ -106,6 +106,9 @@ brew install cmake protobuf
 
 # Rerun pip setup
 pip install -r requirements.txt
+
+# Install xformers aside
+pip install -U xformers
 ```
 
 

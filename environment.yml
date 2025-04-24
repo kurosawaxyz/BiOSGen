@@ -1,10 +1,10 @@
 name: biosgen
 channels:
+  - pytorch
+  - nvidia
   - conda-forge
   - defaults
 dependencies:
-  - python=3.10
-  - pip
   - pip:
       - moondream==0.0.5
       - opencv-python
@@ -34,7 +34,7 @@ dependencies:
       # - onnxruntime     # work for Mac but not for Linux (currently use Linux)
       - onnxruntime-gpu
       - torchviz
-      - flash-attn
+      - xformers
 
   - conda:                # -> to be installed with conda-forge
     - libvips

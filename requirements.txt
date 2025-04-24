@@ -23,4 +23,3 @@ thop
 omegaconf
 scipy
 torchviz
-flash-attn
