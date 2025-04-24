@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from abc import ABC, abstractmethod
-import loralib as lora
 import math
 
 from osgen.base import BaseModel
@@ -73,19 +72,15 @@ class CrossAttentionStyleFusion(AbstractAttention):
         self, 
         latent_channels=4, 
         cond_dim=256,
-        is_trainable: bool = True,
-        lora_rank: int = 16,
         *args,
         **kwargs
     ):
         super().__init__()
         self.norm = nn.GroupNorm(2, latent_channels)
-        self.proj_q = lora.Conv2d(latent_channels, latent_channels, 1, r=lora_rank)
-        self.proj_k = lora.Linear(cond_dim, latent_channels, r=lora_rank)
-        self.proj_v = lora.Linear(cond_dim, latent_channels, r=lora_rank)
-        self.proj_out = lora.Conv2d(latent_channels, latent_channels, 1, r=lora_rank)
-        if is_trainable:
-            lora.mark_only_lora_as_trainable(self, bias='lora_only')
+        self.proj_q = nn.Conv2d(latent_channels, latent_channels, 1)
+        self.proj_k = nn.Linear(cond_dim, latent_channels)
+        self.proj_v = nn.Linear(cond_dim, latent_channels)
+        self.proj_out = nn.Conv2d(latent_channels, latent_channels, 1)
 
         
     def forward(self, x, cond):
@@ -215,12 +210,11 @@ class ResBlock(BaseModel):
                 device=self.device, 
             ),
             nn.ReLU(),
-            lora.Conv2d(
+            nn.Conv2d(
                 self.in_channels, 
                 self.out_channels, 
                 kernel_size=3, 
                 padding=1,
-                device=self.device,
             )  
         )
 
@@ -256,7 +250,7 @@ class ResBlock(BaseModel):
 
         self.emb_layers = nn.Sequential(
             nn.ReLU(),
-            lora.Linear(
+            nn.Linear(
                 emb_channels, 
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
                 device=self.device,
@@ -271,7 +265,7 @@ class ResBlock(BaseModel):
             ), 
             nn.ReLU(),
             nn.Dropout(p=dropout),
-            lora.Conv2d(
+            nn.Conv2d(
                 self.out_channels, 
                 self.out_channels, 
                 kernel_size=3, 
