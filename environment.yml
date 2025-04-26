@@ -45,3 +45,4 @@ dependencies:
     - cmake               # CMake for ONNX building
     - protobuf            # Protobuf for ONNX building
     - onnx
+    - python-graphviz

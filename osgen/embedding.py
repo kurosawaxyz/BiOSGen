@@ -9,6 +9,60 @@ import loralib as lora
 from osgen.base import BaseModel
 
 class StyleExtractor(BaseModel):
+    def __init__(
+        self,
+        image_size: int = 512,
+        activation: str = 'relu',
+        use_pretrained: bool = True,
+        device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+        **kwargs
+    ) -> None:
+        super().__init__()
+
+        # Activation
+        if activation == 'relu':
+            self.activation = nn.ReLU()
+        elif activation == 'gelu':
+            self.activation = nn.GELU()
+        elif activation == "sigmoid":
+            self.activation = nn.Sigmoid()
+        elif activation == "silu":
+            self.activation = nn.SiLU()
+        elif activation == "elu":
+            self.activation = nn.ELU()
+        else:
+            raise ValueError(f"Unsupported activation function: {activation}")
+
+        self.device = device
+
+        # Load ResNet50 up to layer4
+        resnet = resnet50(pretrained=use_pretrained)
+        self.resnet = nn.Sequential(*list(resnet.children())[:-2])  # output: (B, 2048, H/32, W/32)
+
+        # Conv layer to reduce channels
+        self.conv_reduce = nn.Conv2d(2048, 512, kernel_size=1, bias=False)  # (B, 512, H/32, W/32)
+
+        self.conv_style = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=3, padding=1, bias=False),   # keep size
+            nn.BatchNorm2d(512),
+            self.activation,
+            nn.Conv2d(512, 512, kernel_size=3, padding=1, bias=False),   # keep size
+            nn.BatchNorm2d(512),
+            self.activation,
+        )
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+
+
+    def forward(self, image):
+        x = self.resnet(image)       # (B, 2048, H/32, W/32)
+        x = self.conv_reduce(x)      # (B, 512, H/32, W/32)
+        x = self.conv_style(x)       # (B, 512, H/32, W/32)
+        x = self.upsample(x)  # Double the size
+        x = self.upsample(x)  # Double the size
+        return x  # structured feature map
+
+
+class StyleExtractorArchive(BaseModel):
     """
     StyleExtractor class for extracting style features from images using a pre-trained ResNet50 model.
     This class is designed to be used as a PyTorch model and can be easily integrated into a larger

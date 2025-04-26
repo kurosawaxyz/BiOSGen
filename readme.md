@@ -96,6 +96,7 @@ pip install flash-attn --no-build-isolation -v
 
 # Install other dependencies
 pip install -r requirements.txt
+conda install -c conda-forge python-graphviz
 ```
 
 3. Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:

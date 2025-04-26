@@ -23,4 +23,5 @@ thop
 omegaconf
 scipy
 torchviz
+python-graphviz
 
