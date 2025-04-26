@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from abc import ABC, abstractmethod
 import math
+from flash_attn import flash_attn_func
 
 from osgen.base import BaseModel
 from osgen.utils import Utilities
@@ -66,7 +67,96 @@ class AbstractAttention(BaseModel, ABC):
     @abstractmethod
     def forward(self, x):
         pass
-    
+
+class FlashStyleCrossAttention(AbstractAttention):
+    def __init__(self, z_dim=64, style_dim=512, heads=4):
+        super().__init__()
+        self.heads = heads
+        self.head_dim = z_dim // heads
+        
+        # Ensure z_dim is divisible by heads
+        assert z_dim % heads == 0, f"z_dim {z_dim} must be divisible by heads {heads}"
+        
+        self.to_q = nn.Linear(z_dim, z_dim, bias=False)
+        self.to_k = nn.Linear(style_dim, z_dim, bias=False)
+        self.to_v = nn.Linear(style_dim, z_dim, bias=False)
+        self.out_proj = nn.Linear(z_dim, z_dim)
+        
+        self.scale = (self.head_dim) ** -0.5
+        
+    def forward(self, z, style, return_attention=False):
+        # Store original dtype for later conversion back
+        original_dtype = z.dtype
+        
+        B, C, H, W = z.shape
+        B, C_style, H_style, W_style = style.shape
+        
+        # Flatten z
+        z_flat = z.permute(0, 2, 3, 1).reshape(B, H * W, C)  # (B, HW, C)
+        
+        # Flatten style
+        style_flat = style.permute(0, 2, 3, 1).reshape(B, H_style * W_style, C_style)  # (B, HW, C_style)
+        
+        # Compute Q, K, V
+        Q = self.to_q(z_flat)      # (B, HW, C)
+        K = self.to_k(style_flat)  # (B, H_style*W_style, C)
+        V = self.to_v(style_flat)  # (B, H_style*W_style, C)
+        
+        # Reshape for multi-head attention
+        Q = Q.view(B, H * W, self.heads, self.head_dim)
+        K = K.view(B, H_style * W_style, self.heads, self.head_dim)
+        V = V.view(B, H_style * W_style, self.heads, self.head_dim)
+
+        # If requesting attention weights, compute them before conversion to fp16/bf16
+        # This is separate from the main computation path
+        attention_weights = None
+        if return_attention:
+            # We'll compute the attention weights separately on CPU to avoid memory issues
+            # and to not interfere with the flash_attn_func path
+            Q_vis = Q.detach().cpu().float()
+            K_vis = K.detach().cpu().float()
+            
+            # Compute attention scores for all heads
+            # (B, HW, heads, head_dim) x (B, N, heads, head_dim)T -> (B, heads, HW, N)
+            Q_vis = Q_vis.permute(0, 2, 1, 3)  # (B, heads, HW, head_dim)
+            K_vis = K_vis.permute(0, 2, 1, 3)  # (B, heads, N, head_dim)
+            
+            # Compute attention scores
+            attn_scores = torch.matmul(Q_vis, K_vis.transpose(-1, -2)) * self.scale  # (B, heads, HW, N)
+            attention_weights = torch.softmax(attn_scores, dim=-1)  # (B, heads, HW, N)
+        
+        # Convert to fp16 or bf16 for flash attention
+        if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+            dtype = torch.bfloat16
+        else:
+            dtype = torch.float16
+            
+        Q = Q.to(dtype)
+        K = K.to(dtype)
+        V = V.to(dtype)
+
+        
+        # Use flash_attn for cross-attention
+        attn_output = flash_attn_func(
+            Q, K, V,
+            dropout_p=0.0,
+            softmax_scale=self.scale,
+            causal=False
+        )  # (B, HW, heads, head_dim)
+        
+        # Convert back to original dtype
+        attn_output = attn_output.to(original_dtype)
+        
+        # Reshape back
+        attn_output = attn_output.reshape(B, H * W, C)
+        out = self.out_proj(attn_output)
+        out = out.view(B, H, W, C).permute(0, 3, 1, 2)  # (B, C, H, W)
+        
+        if return_attention:
+            return out, attention_weights
+        return out
+
+# We don't use this class in the current code, but it's here for reference    
 class CrossAttentionStyleFusion(AbstractAttention):
     def __init__(
         self, 
