@@ -34,7 +34,10 @@ dependencies:
       # - onnxruntime     # work for Mac but not for Linux (currently use Linux)
       - onnxruntime-gpu
       - torchviz
-      - xformers
+      - ninja
+      - packaging
+      - flash-attn
+
 
   - conda:                # -> to be installed with conda-forge
     - libvips
