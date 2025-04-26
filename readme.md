@@ -60,29 +60,10 @@ chmod +x scripts/setup_env.sh
 ./scripts/setup_env.sh
 ```
 
-
-### Setup virtual environment
-#### For miniconda3 users:
-```bash
-conda env create -f environment.yml
-conda activate biosgen
-```
-#### For miniforge users:
-**Warning**:
-
-You will need to remove line 4 and lines 32-34 from `environment.yml` to avoid conflicts while setting up the environment using YAML file. 
-
-As you can't access several `conda` packages in miniforge, you will not be able to use the Moondream model from *vikhyatk/moondream2*. However, there are alternatives such as *HuggingFaceTB/SmolVLM-Instruct*, *microsoft/OmniParser-v2.0*, etc. 
-
-```bash
-conda env create -f environment.yml -k
-conda activate biosgen
-```
-
 #### Important notice
 **Warning**:
 
-1. Miniconda environement setup for MacOS has been removed (starting Apr 19 2025), the current version is written for Linux with CUDA. Make sure you're on Linux and have CUDA installed before executing the YAML file. 
+1. Environment setup using YAML file removed due to issues with `conda` and `pip` packages. *(Update on 2025-04-26)*
 
 2. Severe issues may arise while building wheels for `flash-attn` due to incomppatibility with Python version >= 3.10. If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.
 ```shell
@@ -107,22 +88,6 @@ pip install flash-attn --no-build-isolation -v
 # Install other dependencies
 pip install -r requirements.txt
 conda install -c conda-forge python-graphviz
-```
-
-3. Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:
-
-```shell
-# Install Homebrew if it haven't been done (remember to follow given instructions)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Check if brew is well established
-brew --version
-
-# Install cmake and protobuf via brew
-brew install cmake protobuf
-
-# Rerun pip setup
-pip install -r requirements.txt
 ```
 
 
