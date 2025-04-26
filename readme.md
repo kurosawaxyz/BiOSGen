@@ -71,6 +71,9 @@ conda create -n biosgen python=3.10 -y
 # Activate the environment
 conda activate biosgen
 
+# Check Python version
+python --version
+
 # Optional: upgrade pip
 pip install --upgrade pip
 
@@ -85,8 +88,10 @@ pip install flash-attn --no-build-isolation -v
 
 # Install other dependencies
 pip install -r requirements.txt
-conda install -c conda-forge python-graphviz
+conda install -c conda-forge python-graphviz -y
 ```
+
+>*Note*: `-y` flag is used to automatically confirm the installation of packages without prompting for user input. This is useful when you want to install multiple packages in a single command without having to manually confirm each one.
 
 
 ### Data installation

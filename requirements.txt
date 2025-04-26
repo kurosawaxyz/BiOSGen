@@ -23,6 +23,5 @@ thop
 omegaconf
 scipy
 torchviz
-python-graphviz
 pytorch-fid
 

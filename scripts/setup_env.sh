@@ -17,6 +17,15 @@ pip install flash-attn --no-build-isolation -v
 
 # Install other dependencies
 pip install -r requirements.txt
-conda install -c conda-forge python-graphviz
+conda install -c conda-forge python-graphviz -y
+
+# Check if unzip command is available
+if ! command -v unzip &> /dev/null
+then
+    apt install unzip
+fi
 
 # Install data
+mkdir data
+chmod +x scripts/data_installer.sh
+./scripts/data_installer.sh
