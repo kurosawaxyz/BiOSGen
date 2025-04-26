@@ -1,4 +1,7 @@
 #!/bin/bash
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
 mkdir -p data
 
 python -m scripts.data_installer --url https://zenodo.org/records/10066853/files/HE_zenodo.zip?download=1 --output /root/BiOSGen/data/HE.zip

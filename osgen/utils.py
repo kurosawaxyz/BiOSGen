@@ -96,7 +96,7 @@ class Utilities:
             plt.colorbar(im, ax=ax)
         
         plt.tight_layout()
-        plt.savefig('spatial_attention_maps1.png')
+        plt.savefig('spatial_attention_maps.png')
         plt.close()
 
         print("Visualization complete! Check 'attention_overview.png' and 'spatial_attention_maps1.png'")

@@ -1,3 +1,7 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
 conda create -n biosgen python=3.10 -y
 
 # Activate the environment
