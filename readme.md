@@ -108,6 +108,26 @@ brew install cmake protobuf
 pip install -r requirements.txt
 ```
 
+3. Severe issues may arise while building wheels for `flash-attn` due to incomppatibility with Python version >= 3.10. If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.
+```shell
+# Create a new conda environment with Python 3.10
+conda create -n flashenv python=3.10 -y
+
+# Activate the environment
+conda activate flashenv
+
+# Optional: upgrade pip
+pip install --upgrade pip
+
+# Install build tools (needed for compiling flash-attn)
+pip install ninja packaging
+
+# Install PyTorch with CUDA 12.1
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Now install flash-attn (will compile with correct CUDA/PyTorch setup)
+pip install flash-attn --no-build-isolation -v
+```
 
 
 ### Data installation
