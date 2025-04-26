@@ -54,8 +54,6 @@ BiOSGen/
 
 ### Quick setup
 ```bash
-
-mkdir data
 chmod +x scripts/setup_env.sh
 ./scripts/setup_env.sh
 ```
