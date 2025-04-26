@@ -69,30 +69,36 @@ conda env create -f environment.yml -k
 conda activate biosgen
 ```
 
-#### Alternative
-```bash
-conda create -n biosgen
-conda activate biosgen
-
-# Wheels for onnx need to be installed with conda-forge
-conda install -c conda-forge \
-  libvips \
-  glib \
-  cmake \
-  protobuf \
-  onnx
-
-# pip can be missing on higher python version (>=3.10)
-conda install pip                 
-pip install -r requirements.txt
-```
-
 #### Important notice
 **Warning**:
 
 1. Miniconda environement setup for MacOS has been removed (starting Apr 19 2025), the current version is written for Linux with CUDA. Make sure you're on Linux and have CUDA installed before executing the YAML file. 
 
-2. Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:
+2. Severe issues may arise while building wheels for `flash-attn` due to incomppatibility with Python version >= 3.10. If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.
+```shell
+# Create a new conda environment with Python 3.10
+conda create -n biosgen python=3.10 -y
+
+# Activate the environment
+conda activate biosgen
+
+# Optional: upgrade pip
+pip install --upgrade pip
+
+# Install build tools (needed for compiling flash-attn)
+pip install ninja packaging
+
+# Install PyTorch with CUDA 12.1
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Now install flash-attn (will compile with correct CUDA/PyTorch setup)
+pip install flash-attn --no-build-isolation -v
+
+# Install other dependencies
+pip install -r requirements.txt
+```
+
+3. Please note that issues during conda environment creation may arise due to several operating system incompability or other reasons. As for present, we have encounter OS issues for Mac M1, we suspect it might be due to new Licence for xcode setup on MacOS or Conda 25.01 Licence *(but Conda Licence should not be this severe)*. The first issue is due to `cmake` and `protobuf` missing, make it unable to create wheels for `pyproject.toml` for `onnx`. In this case, you need to:
 
 ```shell
 # Install Homebrew if it haven't been done (remember to follow given instructions)
@@ -106,30 +112,6 @@ brew install cmake protobuf
 
 # Rerun pip setup
 pip install -r requirements.txt
-
-# Install xformers aside
-pip install -U xformers
-```
-
-3. Severe issues may arise while building wheels for `flash-attn` due to incomppatibility with Python version >= 3.10. If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.
-```shell
-# Create a new conda environment with Python 3.10
-conda create -n flashenv python=3.10 -y
-
-# Activate the environment
-conda activate flashenv
-
-# Optional: upgrade pip
-pip install --upgrade pip
-
-# Install build tools (needed for compiling flash-attn)
-pip install ninja packaging
-
-# Install PyTorch with CUDA 12.1
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# Now install flash-attn (will compile with correct CUDA/PyTorch setup)
-pip install flash-attn --no-build-isolation -v
 ```
 
 
