@@ -51,6 +51,16 @@ BiOSGen/
 ```
 
 ## Users manual
+
+### Quick setup
+```bash
+
+mkdir data
+chmod +x scripts/setup_env.sh
+./scripts/setup_env.sh
+```
+
+
 ### Setup virtual environment
 #### For miniconda3 users:
 ```bash

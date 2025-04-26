@@ -78,7 +78,7 @@ class Utilities:
         plt.colorbar(label='Attention Weight')
         
         plt.tight_layout()
-        plt.savefig('attention_overview1.png')
+        plt.savefig('attention_overview.png')
         plt.close()
 
         # Now visualize attention per style token spatially
@@ -99,4 +99,4 @@ class Utilities:
         plt.savefig('spatial_attention_maps1.png')
         plt.close()
 
-        print("Visualization complete! Check 'attention_overview1.png' and 'spatial_attention_maps1.png'")
+        print("Visualization complete! Check 'attention_overview.png' and 'spatial_attention_maps1.png'")
