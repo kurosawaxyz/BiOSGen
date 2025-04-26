@@ -106,6 +106,9 @@ brew install cmake protobuf
 
 # Rerun pip setup
 pip install -r requirements.txt
+
+# Install xformers aside
+pip install -U xformers
 ```
 
 3. Severe issues may arise while building wheels for `flash-attn` due to incomppatibility with Python version >= 3.10. If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.

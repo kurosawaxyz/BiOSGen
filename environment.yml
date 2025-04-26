@@ -1,10 +1,10 @@
 name: biosgen
 channels:
+  - pytorch
+  - nvidia
   - conda-forge
   - defaults
 dependencies:
-  - python=3.10
-  - pip
   - pip:
       - moondream==0.0.5
       - opencv-python
@@ -37,6 +37,7 @@ dependencies:
       - ninja
       - packaging
       - flash-attn
+
 
   - conda:                # -> to be installed with conda-forge
     - libvips
