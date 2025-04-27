@@ -3,6 +3,7 @@
 
 import numpy as np
 import torch
+import torch.nn as nn
 import matplotlib.pyplot as plt
 
 class Utilities:
@@ -33,6 +34,13 @@ class Utilities:
         Convert a PyTorch tensor to a NumPy array.
         """
         return tensor.cpu().detach().numpy()
+
+    @staticmethod
+    def convert_to_bfloat16(tensor: torch.Tensor) -> torch.Tensor:
+        """
+        Convert a tensor to bfloat16.
+        """
+        return tensor.to(torch.bfloat16)
     
     @staticmethod
     def convert_to_float32(tensor: torch.Tensor) -> torch.Tensor:
@@ -100,3 +108,77 @@ class Utilities:
         plt.close()
 
         print("Visualization complete! Check 'attention_overview.png' and 'spatial_attention_maps1.png'")
+
+
+    @staticmethod
+    def convert_module_to_bf16(module):
+        """
+        Convert primitive modules to bfloat16.
+        Supports Conv, Linear, BatchNorm, LayerNorm and other common layers.
+        """
+        if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)):
+            module.weight.data = module.weight.data.to(torch.bfloat16)
+            if module.bias is not None:
+                module.bias.data = module.bias.data.to(torch.bfloat16)
+        
+        elif isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d, 
+                            nn.LayerNorm, nn.GroupNorm, nn.InstanceNorm1d, 
+                            nn.InstanceNorm2d, nn.InstanceNorm3d)):
+            if module.weight is not None:
+                module.weight.data = module.weight.data.to(torch.bfloat16)
+            if module.bias is not None:
+                module.bias.data = module.bias.data.to(torch.bfloat16)
+            if hasattr(module, 'running_mean') and module.running_mean is not None:
+                module.running_mean = module.running_mean.to(torch.bfloat16)
+            if hasattr(module, 'running_var') and module.running_var is not None:
+                module.running_var = module.running_var.to(torch.bfloat16)
+
+    @staticmethod
+    def convert_model_to_bf16(model):
+        """
+        Convert an entire model to bfloat16.
+        """
+        for module in model.modules():
+            Utilities.convert_module_to_bf16(module)
+        
+        return model
+
+    @staticmethod
+    def convert_module_to_f16(l):
+        """
+        Convert primitive modules to float16.
+        """
+        if isinstance(l, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+            l.weight.data = l.weight.data.to(torch.float16)
+            if l.bias is not None:
+                l.bias.data = l.bias.data.to(torch.float16)
+
+    @staticmethod
+    def convert_model_to_f16(model):
+        """
+        Convert an entire model to float16.
+        """
+        for module in model.modules():
+            Utilities.convert_module_to_f16(module)
+        
+        return model
+
+    @staticmethod
+    def convert_module_to_f32(l):
+        """
+        Convert primitive modules to float32, undoing convert_module_to_f16().
+        """
+        if isinstance(l, (nn.Conv1d, nn.Conv2d, nn.Conv3d)):
+            l.weight.data = l.weight.data.float()
+            if l.bias is not None:
+                l.bias.data = l.bias.data.float()
+
+    @staticmethod
+    def convert_model_to_f32(model):
+        """
+        Convert an entire model to float32, undoing convert_model_to_f16().
+        """
+        for module in model.modules():
+            Utilities.convert_module_to_f32(module)
+        
+        return model

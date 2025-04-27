@@ -106,7 +106,7 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_float32(input)
+        input = Utilities.convert_to_bfloat16(input)
         result = self.encoder(input)
         # result = torch.flatten(result, start_dim=1)
 
@@ -124,7 +124,7 @@ class VanillaVAE(BaseModel):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        z = Utilities.convert_to_float32(z)
+        z = Utilities.convert_to_bfloat16(z)
         result = self.decoder_input(z)
         result = result.view(-1, 512, 16, 16)
         result = self.decoder(result)
@@ -139,9 +139,9 @@ class VanillaVAE(BaseModel):
         :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
         :return: (Tensor) [B x D]
         """
-        # Convert to float32
-        mu = Utilities.convert_to_float32(mu)
-        logvar = Utilities.convert_to_float32(logvar)
+        # Convert to bfloat16
+        mu = Utilities.convert_to_bfloat16(mu)
+        logvar = Utilities.convert_to_bfloat16(logvar)
 
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
@@ -149,17 +149,17 @@ class VanillaVAE(BaseModel):
         # Apply smoothing (like a Gaussian blur)
         eps = F.avg_pool2d(eps, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
 
-        return eps * std + mu
+        return Utilities.convert_to_bfloat16(eps * std + mu)
 
     def reparameterize_learned(self, mu, logvar):
-         # Convert to float32
-        mu = Utilities.convert_to_float32(mu)
-        logvar = Utilities.convert_to_float32(logvar)
+         # Convert to bfloat16
+        mu = Utilities.convert_to_bfloat16(mu)
+        logvar = Utilities.convert_to_bfloat16(logvar)
 
         std = torch.exp(0.5 * logvar)
         # Instead of random noise, learn noise shape
         eps = self.noise_predictor(mu)
-        return eps * std + mu
+        return Utilities.convert_to_bfloat16(eps * std + mu)
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
         """
@@ -168,7 +168,7 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of tensors [reconstructed, input, mu, log_var]
         """
-        input = Utilities.convert_to_float32(input)
+        input = Utilities.convert_to_bfloat16(input)
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input, mu, log_var]
@@ -238,12 +238,13 @@ class VanillaEncoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_float32(input)
+        input = Utilities.convert_to_bfloat16(input)
         mu, log_var = self.encode(input)
         if self.learned:
             z = self.reparameterize_learned(mu, log_var)
         else:
             z = self.reparameterize(mu, log_var)
+
         return z
     
 class VanillaDecoder(VanillaVAE):
@@ -265,5 +266,5 @@ class VanillaDecoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_float32(input)
+        input = Utilities.convert_to_bfloat16(input)
         return self.decode(input)

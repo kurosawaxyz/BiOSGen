@@ -368,7 +368,7 @@ class ResBlock(BaseModel):
         if self.out_channels == self.in_channels:
             self.skip_connection = nn.Identity()
         else:
-            self.skip_connection = lora.Conv2d(
+            self.skip_connection = nn.Conv2d(
                 self.in_channels, 
                 self.out_channels, 
                 kernel_size=1,
@@ -377,8 +377,8 @@ class ResBlock(BaseModel):
 
 
     def forward(self, x, emb):
-        x = Utilities.convert_to_float32(x)
-        emb = Utilities.convert_to_float32(emb)
+        x = Utilities.convert_to_bfloat16(x)
+        emb = Utilities.convert_to_bfloat16(emb)
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             h = in_rest(x)
