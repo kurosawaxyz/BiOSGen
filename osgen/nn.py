@@ -458,106 +458,106 @@ class ResBlock(BaseModel):
 
 
 
-# Additinal utility functions
-def conv_nd(dims, *args, **kwargs):
-    """
-    Create a 1D, 2D, or 3D convolution module.
-    """
-    if dims == 1:
-        return nn.Conv1d(*args, **kwargs)
-    elif dims == 2:
-        return nn.Conv2d(*args, **kwargs)
-    elif dims == 3:
-        return nn.Conv3d(*args, **kwargs)
-    raise ValueError(f"unsupported dimensions: {dims}")
+# # Additinal utility functions
+# def conv_nd(dims, *args, **kwargs):
+#     """
+#     Create a 1D, 2D, or 3D convolution module.
+#     """
+#     if dims == 1:
+#         return nn.Conv1d(*args, **kwargs)
+#     elif dims == 2:
+#         return nn.Conv2d(*args, **kwargs)
+#     elif dims == 3:
+#         return nn.Conv3d(*args, **kwargs)
+#     raise ValueError(f"unsupported dimensions: {dims}")
 
 
-def linear(*args, **kwargs):
-    """
-    Create a linear module.
-    """
-    return nn.Linear(*args, **kwargs)
+# def linear(*args, **kwargs):
+#     """
+#     Create a linear module.
+#     """
+#     return nn.Linear(*args, **kwargs)
 
 
-def avg_pool_nd(dims, *args, **kwargs):
-    """
-    Create a 1D, 2D, or 3D average pooling module.
-    """
-    if dims == 1:
-        return nn.AvgPool1d(*args, **kwargs)
-    elif dims == 2:
-        return nn.AvgPool2d(*args, **kwargs)
-    elif dims == 3:
-        return nn.AvgPool3d(*args, **kwargs)
-    raise ValueError(f"unsupported dimensions: {dims}")
+# def avg_pool_nd(dims, *args, **kwargs):
+#     """
+#     Create a 1D, 2D, or 3D average pooling module.
+#     """
+#     if dims == 1:
+#         return nn.AvgPool1d(*args, **kwargs)
+#     elif dims == 2:
+#         return nn.AvgPool2d(*args, **kwargs)
+#     elif dims == 3:
+#         return nn.AvgPool3d(*args, **kwargs)
+#     raise ValueError(f"unsupported dimensions: {dims}")
 
 
-def update_ema(target_params, source_params, rate=0.99):
-    """
-    Update target parameters to be closer to those of source parameters using
-    an exponential moving average.
+# def update_ema(target_params, source_params, rate=0.99):
+#     """
+#     Update target parameters to be closer to those of source parameters using
+#     an exponential moving average.
 
-    :param target_params: the target parameter sequence.
-    :param source_params: the source parameter sequence.
-    :param rate: the EMA rate (closer to 1 means slower).
-    """
-    for targ, src in zip(target_params, source_params):
-        targ.detach().mul_(rate).add_(src, alpha=1 - rate)
-
-
-def zero_module(module):
-    """
-    Zero out the parameters of a module and return it.
-    """
-    for p in module.parameters():
-        p.detach().zero_()
-    return module
+#     :param target_params: the target parameter sequence.
+#     :param source_params: the source parameter sequence.
+#     :param rate: the EMA rate (closer to 1 means slower).
+#     """
+#     for targ, src in zip(target_params, source_params):
+#         targ.detach().mul_(rate).add_(src, alpha=1 - rate)
 
 
-def scale_module(module, scale):
-    """
-    Scale the parameters of a module and return it.
-    """
-    for p in module.parameters():
-        p.detach().mul_(scale)
-    return module
+# def zero_module(module):
+#     """
+#     Zero out the parameters of a module and return it.
+#     """
+#     for p in module.parameters():
+#         p.detach().zero_()
+#     return module
 
 
-def mean_flat(tensor):
-    """
-    Take the mean over all non-batch dimensions.
-    """
-    return tensor.mean(dim=list(range(1, len(tensor.shape))))
+# def scale_module(module, scale):
+#     """
+#     Scale the parameters of a module and return it.
+#     """
+#     for p in module.parameters():
+#         p.detach().mul_(scale)
+#     return module
 
 
-def append_dims(x, target_dims):
-    """Appends dimensions to the end of a tensor until it has target_dims dimensions."""
-    dims_to_append = target_dims - x.ndim
-    if dims_to_append < 0:
-        raise ValueError(
-            f"input has {x.ndim} dims but target_dims is {target_dims}, which is less"
-        )
-    return x[(...,) + (None,) * dims_to_append]
+# def mean_flat(tensor):
+#     """
+#     Take the mean over all non-batch dimensions.
+#     """
+#     return tensor.mean(dim=list(range(1, len(tensor.shape))))
 
 
-def append_zero(x):
-    return torch.cat([x, x.new_zeros([1])])
-
-class GroupNormBF16(nn.GroupNorm):
-    def forward(self, x):
-        # Temporarily convert to float32 for stability (if needed)
-        orig_dtype = x.dtype
-        if orig_dtype == torch.bfloat16:
-            x = x.to(torch.float32)
-        x = super().forward(x)
-        return x.to(orig_dtype)
+# def append_dims(x, target_dims):
+#     """Appends dimensions to the end of a tensor until it has target_dims dimensions."""
+#     dims_to_append = target_dims - x.ndim
+#     if dims_to_append < 0:
+#         raise ValueError(
+#             f"input has {x.ndim} dims but target_dims is {target_dims}, which is less"
+#         )
+#     return x[(...,) + (None,) * dims_to_append]
 
 
-def normalization(channels):
-    """
-    Make a standard normalization layer.
+# def append_zero(x):
+#     return torch.cat([x, x.new_zeros([1])])
 
-    :param channels: number of input channels.
-    :return: an nn.Module for normalization.
-    """
-    return GroupNormBF16(32, channels)
+# class GroupNormBF16(nn.GroupNorm):
+#     def forward(self, x):
+#         # Temporarily convert to float32 for stability (if needed)
+#         orig_dtype = x.dtype
+#         if orig_dtype == torch.bfloat16:
+#             x = x.to(torch.float32)
+#         x = super().forward(x)
+#         return x.to(orig_dtype)
+
+
+# def normalization(channels):
+#     """
+#     Make a standard normalization layer.
+
+#     :param channels: number of input channels.
+#     :return: an nn.Module for normalization.
+#     """
+#     return GroupNormBF16(32, channels)
