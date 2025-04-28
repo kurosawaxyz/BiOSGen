@@ -25,6 +25,40 @@ class BaseModel(nn.Module):
         self.device = device
         self.to(device)
 
+    def check_dtype(self):
+        for name, param in self.named_parameters():
+            print(f"{name}: {param.dtype}")
+
+    def count_dtypes(self):
+        dtype_counts = {}
+        for param in self.parameters():
+            dtype = param.dtype
+            if dtype in dtype_counts:
+                dtype_counts[dtype] += 1
+            else:
+                dtype_counts[dtype] = 1
+        
+        for dtype, count in dtype_counts.items():
+            print(f"{dtype}: {count} parameters")
+
+    def get_model_size(self):
+        size_bytes = 0
+        for param in self.parameters():
+            size_bytes += param.nelement() * param.element_size()
+        return size_bytes / 1024**2  # Convert to MB
+
+    def count_dtypes(self):
+        dtype_counts = {}
+        for param in self.parameters():
+            dtype = param.dtype
+            if dtype in dtype_counts:
+                dtype_counts[dtype] += 1
+            else:
+                dtype_counts[dtype] = 1
+        
+        for dtype, count in dtype_counts.items():
+            print(f"{dtype}: {count} parameters")
+
     def train(self, mode: bool = True) -> None:
         """
         Placeholder method for training the model.

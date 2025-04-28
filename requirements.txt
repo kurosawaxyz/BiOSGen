@@ -23,7 +23,5 @@ thop
 omegaconf
 scipy
 torchviz
-ninja
-packaging
-flash-attn
+pytorch-fid
 
