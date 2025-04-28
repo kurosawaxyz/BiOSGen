@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(style="darkgrid", palette="deep")
 from torchviz import make_dot
-import loralib as lora
 
 class BaseModel(nn.Module):
     """
@@ -58,12 +57,6 @@ class BaseModel(nn.Module):
         
         for dtype, count in dtype_counts.items():
             print(f"{dtype}: {count} parameters")
-
-    def train(self, mode: bool = True) -> None:
-        """
-        Placeholder method for training the model.
-        """
-        lora.mark_only_lora_as_trainable(self, bias='lora_only')
 
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

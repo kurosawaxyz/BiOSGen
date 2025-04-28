@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from abc import ABC, abstractmethod
 import math
 from flash_attn import flash_attn_func
+import inspect
 
 from osgen.base import BaseModel
 from osgen.utils import Utilities
@@ -46,17 +47,17 @@ class TimestepBlock(BaseModel, ABC):
         """
 
 
-class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
+class TimestepEmbedSequential(nn.Sequential):
     """
     A sequential module that passes timestep embeddings to the children that
     support it as an extra input.
     """
 
-    def forward(self, x, emb):
-        x = Utilities.convert_model_to_bf16(x)
-        emb = Utilities.convert_model_to_bf16(emb)
+    def forward(self, x, emb, style=None):
         for layer in self:
-            if isinstance(layer, TimestepBlock) or type(layer).__name__ in ["ResBlock", "CrossAttentionStyleFusion"]:
+            if isinstance(layer, ResBlock):
+                x = layer(x, emb, style)
+            elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
                 x = layer(x, emb)
             else:
                 x = layer(x)
@@ -453,3 +454,110 @@ class ResBlock(BaseModel):
         res = self.skip_connection(x) + h
 
         return res
+    
+
+
+
+# Additinal utility functions
+def conv_nd(dims, *args, **kwargs):
+    """
+    Create a 1D, 2D, or 3D convolution module.
+    """
+    if dims == 1:
+        return nn.Conv1d(*args, **kwargs)
+    elif dims == 2:
+        return nn.Conv2d(*args, **kwargs)
+    elif dims == 3:
+        return nn.Conv3d(*args, **kwargs)
+    raise ValueError(f"unsupported dimensions: {dims}")
+
+
+def linear(*args, **kwargs):
+    """
+    Create a linear module.
+    """
+    return nn.Linear(*args, **kwargs)
+
+
+def avg_pool_nd(dims, *args, **kwargs):
+    """
+    Create a 1D, 2D, or 3D average pooling module.
+    """
+    if dims == 1:
+        return nn.AvgPool1d(*args, **kwargs)
+    elif dims == 2:
+        return nn.AvgPool2d(*args, **kwargs)
+    elif dims == 3:
+        return nn.AvgPool3d(*args, **kwargs)
+    raise ValueError(f"unsupported dimensions: {dims}")
+
+
+def update_ema(target_params, source_params, rate=0.99):
+    """
+    Update target parameters to be closer to those of source parameters using
+    an exponential moving average.
+
+    :param target_params: the target parameter sequence.
+    :param source_params: the source parameter sequence.
+    :param rate: the EMA rate (closer to 1 means slower).
+    """
+    for targ, src in zip(target_params, source_params):
+        targ.detach().mul_(rate).add_(src, alpha=1 - rate)
+
+
+def zero_module(module):
+    """
+    Zero out the parameters of a module and return it.
+    """
+    for p in module.parameters():
+        p.detach().zero_()
+    return module
+
+
+def scale_module(module, scale):
+    """
+    Scale the parameters of a module and return it.
+    """
+    for p in module.parameters():
+        p.detach().mul_(scale)
+    return module
+
+
+def mean_flat(tensor):
+    """
+    Take the mean over all non-batch dimensions.
+    """
+    return tensor.mean(dim=list(range(1, len(tensor.shape))))
+
+
+def append_dims(x, target_dims):
+    """Appends dimensions to the end of a tensor until it has target_dims dimensions."""
+    dims_to_append = target_dims - x.ndim
+    if dims_to_append < 0:
+        raise ValueError(
+            f"input has {x.ndim} dims but target_dims is {target_dims}, which is less"
+        )
+    return x[(...,) + (None,) * dims_to_append]
+
+
+def append_zero(x):
+    return torch.cat([x, x.new_zeros([1])])
+
+class GroupNormBF16(nn.GroupNorm):
+    def forward(self, x):
+        # Temporarily convert to float32 for stability (if needed)
+        orig_dtype = x.dtype
+        if orig_dtype == torch.bfloat16:
+            x = x.to(torch.float32)
+        x = super().forward(x)
+        return x.to(orig_dtype)
+
+
+def normalization(channels):
+    """
+    Make a standard normalization layer.
+
+    :param channels: number of input channels.
+    :return: an nn.Module for normalization.
+    """
+    return GroupNormBF16(32, channels)
