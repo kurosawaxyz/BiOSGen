@@ -24,7 +24,7 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     """
     half = dim // 2
     freqs = torch.exp(
-        -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.float32) / half
+        -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.bfloat16) / half
     ).to(device=timesteps.device)
     args = timesteps[:, None].float() * freqs[None]
     embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
@@ -53,14 +53,65 @@ class TimestepEmbedSequential(nn.Sequential, TimestepBlock):
     """
 
     def forward(self, x, emb):
-        x = Utilities.convert_to_float32(x)
-        emb = Utilities.convert_to_float32(emb)
+        x = Utilities.convert_model_to_bf16(x)
+        emb = Utilities.convert_model_to_bf16(emb)
         for layer in self:
             if isinstance(layer, TimestepBlock) or type(layer).__name__ in ["ResBlock", "CrossAttentionStyleFusion"]:
                 x = layer(x, emb)
             else:
                 x = layer(x)
         return x
+
+class SpatialAdaIN(BaseModel):
+    def __init__(self, in_channels):
+        super().__init__()
+        self.in_channels = in_channels
+        # We'll predefine the channel reducers for common cases
+        self.channel_reducer = None
+        
+    def forward(self, content, style):
+        # content: [N, C, H, W]
+        # style: [1, C, H', W'] 
+
+        # Ensure all inputs are bfloat16
+        content = content.to(torch.bfloat16)
+        style = style.to(torch.bfloat16)
+
+        # Resize spatially
+        spatial_resized = F.interpolate(style, 
+                             size=(content.shape[2], content.shape[3]), 
+                             mode='bilinear', 
+                             align_corners=False)
+    
+        # Match channels if needed
+        if spatial_resized.shape[1] != content.shape[1]:
+            # Create channel reducer if it doesn't exist or has wrong dimensions
+            if (self.channel_reducer is None or 
+                self.channel_reducer.in_channels != spatial_resized.shape[1] or
+                self.channel_reducer.out_channels != content.shape[1]):
+                
+                self.channel_reducer = nn.Conv2d(
+                    spatial_resized.shape[1], 
+                    content.shape[1], 
+                    kernel_size=1
+                ).to(content.device).to(torch.bfloat16)
+                
+            final_resized = self.channel_reducer(spatial_resized)
+        else:
+            final_resized = spatial_resized
+        
+        # Normalize content
+        content_mean = content.mean(dim=(2, 3), keepdim=True)
+        content_std = content.std(dim=(2, 3), keepdim=True) + 1e-8
+        content_normalized = (content - content_mean) / content_std
+        
+        # Get style statistics
+        style_mean = final_resized.mean(dim=(2, 3), keepdim=True)
+        style_std = final_resized.std(dim=(2, 3), keepdim=True) + 1e-8
+        
+        # Apply style
+        return style_std * content_normalized + style_mean
+    
     
 # Class: Attention
 class AbstractAttention(BaseModel, ABC):
@@ -68,8 +119,8 @@ class AbstractAttention(BaseModel, ABC):
     def forward(self, x):
         pass
 
-class FlashStyleCrossAttention(AbstractAttention):
-    def __init__(self, z_dim=64, style_dim=512, heads=4):
+class FlashSelfAttention(AbstractAttention):
+    def __init__(self, z_dim=64, heads=4):
         super().__init__()
         self.heads = heads
         self.head_dim = z_dim // heads
@@ -78,52 +129,45 @@ class FlashStyleCrossAttention(AbstractAttention):
         assert z_dim % heads == 0, f"z_dim {z_dim} must be divisible by heads {heads}"
         
         self.to_q = nn.Linear(z_dim, z_dim, bias=False)
-        self.to_k = nn.Linear(style_dim, z_dim, bias=False)
-        self.to_v = nn.Linear(style_dim, z_dim, bias=False)
+        self.to_k = nn.Linear(z_dim, z_dim, bias=False)
+        self.to_v = nn.Linear(z_dim, z_dim, bias=False)
         self.out_proj = nn.Linear(z_dim, z_dim)
         
         self.scale = (self.head_dim) ** -0.5
         
-    def forward(self, z, style, return_attention=False):
+    def forward(self, z, return_attention=False):
         # Store original dtype for later conversion back
         original_dtype = z.dtype
         
         B, C, H, W = z.shape
-        B, C_style, H_style, W_style = style.shape
         
         # Flatten z
         z_flat = z.permute(0, 2, 3, 1).reshape(B, H * W, C)  # (B, HW, C)
         
-        # Flatten style
-        style_flat = style.permute(0, 2, 3, 1).reshape(B, H_style * W_style, C_style)  # (B, HW, C_style)
-        
-        # Compute Q, K, V
-        Q = self.to_q(z_flat)      # (B, HW, C)
-        K = self.to_k(style_flat)  # (B, H_style*W_style, C)
-        V = self.to_v(style_flat)  # (B, H_style*W_style, C)
+        # Compute Q, K, V from the same input
+        Q = self.to_q(z_flat)  # (B, HW, C)
+        K = self.to_k(z_flat)  # (B, HW, C)
+        V = self.to_v(z_flat)  # (B, HW, C)
         
         # Reshape for multi-head attention
         Q = Q.view(B, H * W, self.heads, self.head_dim)
-        K = K.view(B, H_style * W_style, self.heads, self.head_dim)
-        V = V.view(B, H_style * W_style, self.heads, self.head_dim)
+        K = K.view(B, H * W, self.heads, self.head_dim)
+        V = V.view(B, H * W, self.heads, self.head_dim)
 
         # If requesting attention weights, compute them before conversion to fp16/bf16
-        # This is separate from the main computation path
         attention_weights = None
         if return_attention:
             # We'll compute the attention weights separately on CPU to avoid memory issues
-            # and to not interfere with the flash_attn_func path
             Q_vis = Q.detach().cpu().float()
             K_vis = K.detach().cpu().float()
             
             # Compute attention scores for all heads
-            # (B, HW, heads, head_dim) x (B, N, heads, head_dim)T -> (B, heads, HW, N)
             Q_vis = Q_vis.permute(0, 2, 1, 3)  # (B, heads, HW, head_dim)
-            K_vis = K_vis.permute(0, 2, 1, 3)  # (B, heads, N, head_dim)
+            K_vis = K_vis.permute(0, 2, 1, 3)  # (B, heads, HW, head_dim)
             
             # Compute attention scores
-            attn_scores = torch.matmul(Q_vis, K_vis.transpose(-1, -2)) * self.scale  # (B, heads, HW, N)
-            attention_weights = torch.softmax(attn_scores, dim=-1)  # (B, heads, HW, N)
+            attn_scores = torch.matmul(Q_vis, K_vis.transpose(-1, -2)) * self.scale  # (B, heads, HW, HW)
+            attention_weights = torch.softmax(attn_scores, dim=-1)  # (B, heads, HW, HW)
         
         # Convert to fp16 or bf16 for flash attention
         if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
@@ -134,9 +178,8 @@ class FlashStyleCrossAttention(AbstractAttention):
         Q = Q.to(dtype)
         K = K.to(dtype)
         V = V.to(dtype)
-
         
-        # Use flash_attn for cross-attention
+        # Use flash_attn for self-attention
         attn_output = flash_attn_func(
             Q, K, V,
             dropout_p=0.0,
@@ -175,8 +218,8 @@ class CrossAttentionStyleFusion(AbstractAttention):
         
     def forward(self, x, cond):
         # Convert inputs to float32
-        x = Utilities.convert_to_float32(x)
-        cond = Utilities.convert_to_float32(cond)
+        x = Utilities.convert_model_to_bf16(x)
+        cond = Utilities.convert_model_to_bf16(cond)
         # x: [B, 4, H, W], cond: [B, 256]
         B, C, H, W = x.shape
         
@@ -224,7 +267,7 @@ class Upsample(BaseModel):
             self.conv = nn.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1)
         
     def forward(self, x):
-        x = Utilities.convert_to_float32(x)
+        x = Utilities.convert_to_bfloat16(x)
         x = F.interpolate(x, scale_factor=2, mode="nearest")
         if self.use_conv:
             x = self.conv(x)
@@ -257,7 +300,7 @@ class Downsample(BaseModel):
             self.op = nn.AvgPool2d(kernel_size=stride, stride=stride)
 
     def forward(self, x):
-        x = Utilities.convert_to_float32(x)
+        x = Utilities.convert_to_bfloat16(x)
         return self.op(x)
     
 
@@ -291,6 +334,9 @@ class ResBlock(BaseModel):
         
         # Explicitly set device and dtype
         self.device = device or torch.device('cpu')
+
+        # Define AdaIN
+        self.adain = SpatialAdaIN(self.in_channels).to(self.device)
 
         # Define layers
         # Layer 1
@@ -376,9 +422,11 @@ class ResBlock(BaseModel):
             )
 
 
-    def forward(self, x, emb):
+    def forward(self, x, emb, style):  # Add style parameter
         x = Utilities.convert_to_bfloat16(x)
         emb = Utilities.convert_to_bfloat16(emb)
+        style = Utilities.convert_to_bfloat16(style)  # Convert style to bfloat16
+        
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             h = in_rest(x)
@@ -398,6 +446,9 @@ class ResBlock(BaseModel):
         else:
             h = h + emb_out[:, :, None, None]
             h = self.out_layers(h)
+
+        # Add AdaIN right here, before adding the skip connection
+        h = self.adain(h, style)
 
         res = self.skip_connection(x) + h
 

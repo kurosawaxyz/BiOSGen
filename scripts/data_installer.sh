@@ -16,10 +16,10 @@ then
 fi
 
 # Unzip the downloaded files
-unzip data/HE.zip -d data/HE
-unzip data/NKX3.zip -d data/NKX3
-unzip data/tissue_mask.zip -d data/tissue_mask
-unzip data/bbox.zip -d data/bbox
+unzip data/HE.zip -d data/
+unzip data/NKX3.zip -d data/
+unzip data/tissue_mask.zip -d data/
+unzip data/bbox.zip -d data/
 
 # Remove the zip files after extraction
 rm data/HE.zip
