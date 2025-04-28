@@ -1,4 +1,3 @@
-moondream==0.0.5
 opencv-python
 torch
 torchvision
@@ -13,8 +12,8 @@ pyyaml
 tqdm
 transformers
 einops
-pyvips
-git+https://github.com/openai/CLIP.git
+# pyvips
+# git+https://github.com/openai/CLIP.git
 diffusers
 accelerate
 loralib
