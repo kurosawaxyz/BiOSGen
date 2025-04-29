@@ -99,7 +99,6 @@ conda install -c conda-forge python-graphviz -y
 #### Install train-test data
 
 ```bash
-mkdir data
 chmod +x scripts/data_installer.sh
 ./scripts/data_installer.sh
 ```
