@@ -42,22 +42,22 @@ class VanillaVAE(BaseModel):
 
         self.encoder = nn.Sequential(*modules)
         # Convolution to reduce to latent channels (with LoRA)
-        self.conv_mu = nn.Conv2d(
-            in_channels=in_channels, 
-            out_channels=latent_dim, 
-            kernel_size=1, 
-            stride=1, 
-            padding=0,
-        )
-        self.conv_logvar = nn.Conv2d(
-            in_channels=in_channels, 
-            out_channels=latent_dim, 
-            kernel_size=1, 
-            stride=1, 
-            padding=0,
-            )
-        # self.fc_mu = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
-        # self.fc_var = nn.Linear(hidden_dims[-1] * 16 * 16, latent_dim)
+        # self.conv_mu = nn.Conv2d(
+        #     in_channels=in_channels, 
+        #     out_channels=latent_dim, 
+        #     kernel_size=1, 
+        #     stride=1, 
+        #     padding=0,
+        # )
+        # self.conv_logvar = nn.Conv2d(
+        #     in_channels=in_channels, 
+        #     out_channels=latent_dim, 
+        #     kernel_size=1, 
+        #     stride=1, 
+        #     padding=0,
+        #     )
+        self.fc_mu = nn.Linear(hidden_dims[-1], latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1], latent_dim)
 
         self.noise_predictor = nn.Conv2d(latent_dim, latent_dim, kernel_size=3, padding=1)
 
@@ -108,12 +108,16 @@ class VanillaVAE(BaseModel):
         """
         input = Utilities.convert_to_bfloat16(input)
         result = self.encoder(input)
-        # result = torch.flatten(result, start_dim=1)
+        result = result.view(result.size(0), result.size(1), -1)
+        result = result.permute(0, 2, 1)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
-        mu = self.conv_mu(result)
-        log_var = self.conv_logvar(result)
+        mu = self.fc_mu(result)
+        log_var = self.fc_var(result)
+
+        mu = mu.permute(0, 2, 1)
+        log_var = log_var.permute(0, 2, 1)
 
         return [mu, log_var]
 
