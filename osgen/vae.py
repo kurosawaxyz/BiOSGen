@@ -6,6 +6,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch import Tensor
 from typing import List
+import numpy as np
 
 from osgen.base import BaseModel
 from osgen.utils import Utilities
@@ -137,33 +138,60 @@ class VanillaVAE(BaseModel):
 
     def reparameterize(self, mu: Tensor, logvar: Tensor, kernel_size=3) -> Tensor:
         """
-        Reparameterization trick to sample from N(mu, var) from
-        N(0,1).
-        :param mu: (Tensor) Mean of the latent Gaussian [B x D]
-        :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
-        :return: (Tensor) [B x D]
+        Reparameterization trick to sample from N(mu, var) using spatial latent maps.
+        :param mu: [B, C, H*W]
+        :param logvar: [B, C, H*W]
+        :return: [B, C, H*W]
         """
-        # Convert to bfloat16
+        B, C, HW = mu.shape
+        H = W = int(HW ** 0.5)
+        assert H * W == HW, "Latent spatial size is not square"
+
+        mu = mu.view(B, C, H, W)
+        logvar = logvar.view(B, C, H, W)
+
         mu = Utilities.convert_to_bfloat16(mu)
         logvar = Utilities.convert_to_bfloat16(logvar)
 
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
 
-        # Apply smoothing (like a Gaussian blur)
+        # Apply smoothing (Gaussian-like blur using average pooling)
         eps = F.avg_pool2d(eps, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
 
-        return Utilities.convert_to_bfloat16(eps * std + mu)
+        z = eps * std + mu
+        z = Utilities.convert_to_bfloat16(z)
 
-    def reparameterize_learned(self, mu, logvar):
-         # Convert to bfloat16
+        return z.view(B, C, -1)
+
+
+    def reparameterize_learned(self, mu: Tensor, logvar: Tensor) -> Tensor:
+        """
+        Learned reparameterization using a noise predictor network.
+        :param mu: [B, C, H*W]
+        :param logvar: [B, C, H*W]
+        :return: [B, C, H*W]
+        """
+        B, C, HW = mu.shape
+        H = W = int(HW ** 0.5)
+        assert H * W == HW, "Latent spatial size is not square"
+
+        mu = mu.view(B, C, H, W)
+        logvar = logvar.view(B, C, H, W)
+
         mu = Utilities.convert_to_bfloat16(mu)
         logvar = Utilities.convert_to_bfloat16(logvar)
 
         std = torch.exp(0.5 * logvar)
-        # Instead of random noise, learn noise shape
+
+        # Predict structured noise using learned module
         eps = self.noise_predictor(mu)
-        return Utilities.convert_to_bfloat16(eps * std + mu)
+
+        z = eps * std + mu
+        z = Utilities.convert_to_bfloat16(z)
+
+        return z.view(B, C, -1)
+
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
         """
@@ -248,6 +276,10 @@ class VanillaEncoder(VanillaVAE):
             z = self.reparameterize_learned(mu, log_var)
         else:
             z = self.reparameterize(mu, log_var)
+
+        # Transform back to the original shape
+        H = W = int(np.sqrt(z.size(2)))
+        z = z.view(z.size(0), z.size(1), H, W)
 
         return z
     

@@ -103,29 +103,14 @@ class BaseModel(nn.Module):
     ) -> None:
         
         """
-        Note: Do not use with Vanilla VAE, it will not work
+        Note: Implement this function to visualize the feature maps of the model (optional).
+        :param image: Input image to visualize feature maps.
+        :param num_maps: Number of feature maps to visualize.
+        :param mean: Mean values for normalization.
+        :param std: Standard deviation values for normalization.
+        :param size: Size of the image.
+        :param save_path: Path to save the visualized feature maps.
+        :param show: Whether to show the visualized feature maps.
         """
 
-        transform = transforms.Compose([
-            transforms.Resize((size, size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ])
-        # Convert PIL image to tensor
-        img_tensor = transform(image).unsqueeze(0)
-        with torch.no_grad():
-            features = self(img_tensor)             # do not convert img_tensor to device, not working 
-
-        feature_maps = features.squeeze(0).cpu().numpy()
-        _, axs = plt.subplots(1, num_maps, figsize=(15, 5))
-        for i in range(num_maps):
-            axs[i].imshow(feature_maps[i], cmap='viridis')
-            axs[i].axis('off')
-            axs[i].set_title(f'Feature {i}')
-        plt.tight_layout()
-
-        if save_path is not None:
-            plt.savefig(save_path, bbox_inches='tight', pad_inches=0, dpi=600)
-
-        if show:
-            plt.show()
+        pass 
