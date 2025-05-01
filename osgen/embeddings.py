@@ -11,7 +11,7 @@ class StyleExtractor(BaseModel):
     def __init__(
         self,
         image_size: int = 512,
-        embedded_dim: int = 18,
+        embedded_dim: int = 64,
         activation: str = 'relu',
         use_pretrained: bool = True,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu',

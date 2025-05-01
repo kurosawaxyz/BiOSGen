@@ -55,7 +55,7 @@ class TimestepEmbedSequential(nn.Sequential):
 
     def forward(self, x, emb, style=None):
         for layer in self:
-            if isinstance(layer, ResBlock):
+            if isinstance(layer, StyledResBlock):
                 x = layer(x, emb, style)
             elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
                 x = layer(x, emb)
@@ -64,29 +64,28 @@ class TimestepEmbedSequential(nn.Sequential):
         return x
 
 class SpatialAdaIN(BaseModel):
-    def __init__(self, in_channels):
+    """Improved Adaptive Instance Normalization for spatial style transfer."""
+    def __init__(self, channels, eps=1e-5):
         super().__init__()
-        self.in_channels = in_channels
-        # We'll predefine the channel reducers for common cases
+        self.channels = channels
+        self.eps = eps
         self.channel_reducer = None
         
     def forward(self, content, style):
-        # content: [N, C, H, W]
-        # style: [1, C, H', W'] 
-
-        # Ensure all inputs are bfloat16
-        content = content.to(torch.bfloat16)
-        style = style.to(torch.bfloat16)
-
-        # Resize spatially
-        spatial_resized = F.interpolate(style, 
-                             size=(content.shape[2], content.shape[3]), 
-                             mode='bilinear', 
-                             align_corners=False)
-    
+        # Convert to bfloat16
+        content = Utilities.convert_to_bfloat16(content)
+        style = Utilities.convert_to_bfloat16(style)
+        
+        # Resize style spatially to match content
+        spatial_resized = F.interpolate(
+            style, 
+            size=(content.shape[2], content.shape[3]), 
+            mode='bilinear', 
+            align_corners=False
+        )
+        
         # Match channels if needed
         if spatial_resized.shape[1] != content.shape[1]:
-            # Create channel reducer if it doesn't exist or has wrong dimensions
             if (self.channel_reducer is None or 
                 self.channel_reducer.in_channels != spatial_resized.shape[1] or
                 self.channel_reducer.out_channels != content.shape[1]):
@@ -97,30 +96,26 @@ class SpatialAdaIN(BaseModel):
                     kernel_size=1
                 ).to(content.device).to(torch.bfloat16)
                 
-            final_resized = self.channel_reducer(spatial_resized)
+            style_features = self.channel_reducer(spatial_resized)
         else:
-            final_resized = spatial_resized
+            style_features = spatial_resized
         
-        # Normalize content
+        # Instance normalization on content (without affine parameters)
         content_mean = content.mean(dim=(2, 3), keepdim=True)
-        content_std = content.std(dim=(2, 3), keepdim=True) + 1e-8
-        content_normalized = (content - content_mean) / content_std
+        content_var = content.var(dim=(2, 3), keepdim=True) + self.eps
+        content_normalized = (content - content_mean) / torch.sqrt(content_var)
         
-        # Get style statistics
-        style_mean = final_resized.mean(dim=(2, 3), keepdim=True)
-        style_std = final_resized.std(dim=(2, 3), keepdim=True) + 1e-8
+        # Extract style statistics with improved stability
+        style_mean = style_features.mean(dim=(2, 3), keepdim=True)
+        style_var = style_features.var(dim=(2, 3), keepdim=True) + self.eps
+        style_std = torch.sqrt(style_var)
         
         # Apply style
         return style_std * content_normalized + style_mean
     
     
 # Class: Attention
-class AbstractAttention(BaseModel, ABC):
-    @abstractmethod
-    def forward(self, x):
-        pass
-
-class FlashSelfAttention(AbstractAttention):
+class FlashSelfAttention(BaseModel, ABC):
     def __init__(self, z_dim=64, heads=4):
         super().__init__()
         self.heads = heads
@@ -200,49 +195,6 @@ class FlashSelfAttention(AbstractAttention):
             return out, attention_weights
         return out
 
-# We don't use this class in the current code, but it's here for reference    
-class CrossAttentionStyleFusion(AbstractAttention):
-    def __init__(
-        self, 
-        latent_channels=4, 
-        cond_dim=256,
-        *args,
-        **kwargs
-    ):
-        super().__init__()
-        self.norm = nn.GroupNorm(2, latent_channels)
-        self.proj_q = nn.Conv2d(latent_channels, latent_channels, 1)
-        self.proj_k = nn.Linear(cond_dim, latent_channels)
-        self.proj_v = nn.Linear(cond_dim, latent_channels)
-        self.proj_out = nn.Conv2d(latent_channels, latent_channels, 1)
-
-        
-    def forward(self, x, cond):
-        # Convert inputs to float32
-        x = Utilities.convert_model_to_bf16(x)
-        cond = Utilities.convert_model_to_bf16(cond)
-        # x: [B, 4, H, W], cond: [B, 256]
-        B, C, H, W = x.shape
-        
-        # Normalize and get query
-        h = self.norm(x)
-        q = self.proj_q(h)                      # [B, 4, H, W]
-        q = q.reshape(B, C, -1)                 # [B, 4, H*W]
-        
-        # Get key and value from condition
-        k = self.proj_k(cond).unsqueeze(-1)     # [B, 4, 1]
-        v = self.proj_v(cond).unsqueeze(-1)     # [B, 4, 1]
-        
-        # Attention
-        weight = torch.bmm(q.permute(0, 2, 1), k)  # [B, H*W, 1]
-        weight = F.softmax(weight, dim=1)
-        
-        # Apply attention and reshape back to spatial dimensions
-        h = torch.bmm(v, weight.permute(0, 2, 1))  # [B, 4, H*W]
-        h = h.reshape(B, C, H, W)                  # [B, 4, H, W]
-
-        return x + self.proj_out(h)
-    
 # Class: Upsample
 class Upsample(BaseModel):
     def __init__(
@@ -306,21 +258,21 @@ class Downsample(BaseModel):
     
 
 class ResBlock(BaseModel):
+    """Simplified ResBlock without style conditioning."""
     def __init__(
         self,
         emb_channels: int,
-        dropout: float,                 # Bottleneck dropout
+        dropout: float,
         in_channels: int = 4,
         use_conv=False,
         out_channels: int = None,
         up=False,
         down=False,
-        use_scale_shift_norm=False,
+        use_scale_shift_norm=True,  # Better for timestep conditioning
         device=None,
         *args,
         **kwargs
     ):
-        # Define parameters
         super().__init__()
         
         # Ensure valid channel values
@@ -333,231 +285,168 @@ class ResBlock(BaseModel):
         self.updown = up or down
         self.use_scale_shift_norm = use_scale_shift_norm
         
-        # Explicitly set device and dtype
+        # Explicitly set device
         self.device = device or torch.device('cpu')
 
-        # Define AdaIN
-        self.adain = SpatialAdaIN(self.in_channels).to(self.device)
-
-        # Define layers
         # Layer 1
-        self.in_layers = nn.Sequential(
-            nn.BatchNorm2d(
-                self.in_channels, 
-                device=self.device, 
-            ),
-            nn.ReLU(),
-            nn.Conv2d(
-                self.in_channels, 
-                self.out_channels, 
-                kernel_size=3, 
-                padding=1,
-            )  
+        self.in_norm = nn.GroupNorm(8, self.in_channels, device=self.device)  # GroupNorm for better perf
+        self.in_act = nn.SiLU()  # SiLU for better gradients
+        self.in_conv = nn.Conv2d(
+            self.in_channels, 
+            self.out_channels, 
+            kernel_size=3, 
+            padding=1,
+            device=self.device
         )
 
-        # Middle layers
+        # Up/down operations
         if up:
-            self.h_upd = Upsample(
-                in_channels, 
-                use_conv, 
-                out_channels, 
-                device=self.device, 
-            )
-            self.x_upd = Upsample(
-                in_channels, 
-                use_conv, 
-                out_channels, 
-                device=self.device, 
-            )
+            self.h_upd = Upsample(in_channels, use_conv, out_channels, device=self.device)
+            self.x_upd = Upsample(in_channels, use_conv, out_channels, device=self.device)
         elif down:
-            self.h_upd = Downsample(
-                in_channels, 
-                use_conv, 
-                out_channels, 
-                device=self.device, 
-            )
-            self.x_upd = Downsample(
-                in_channels, 
-                use_conv, 
-                out_channels, 
-                device=self.device, 
-            )
+            self.h_upd = Downsample(in_channels, use_conv, out_channels, device=self.device)
+            self.x_upd = Downsample(in_channels, use_conv, out_channels, device=self.device)
         else:
             self.h_upd = self.x_upd = nn.Identity()
 
+        # Timestep embedding layers
         self.emb_layers = nn.Sequential(
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(
                 emb_channels, 
                 2 * self.out_channels if use_scale_shift_norm else self.out_channels,
-                device=self.device,
+                device=self.device
             )
         )
-
-        # Last layers
-        self.out_layers = nn.Sequential(
-            nn.BatchNorm2d(
-                self.out_channels, 
-                device=self.device, 
-            ), 
-            nn.ReLU(),
-            nn.Dropout(p=dropout),
-            nn.Conv2d(
-                self.out_channels, 
-                self.out_channels, 
-                kernel_size=3, 
-                padding=1,
-                device=self.device,
-            )
+        
+        # Output layers
+        self.out_norm = nn.GroupNorm(8, self.out_channels, device=self.device)
+        self.out_act = nn.SiLU()
+        self.out_dropout = nn.Dropout(p=dropout)
+        self.out_conv = nn.Conv2d(
+            self.out_channels, 
+            self.out_channels, 
+            kernel_size=3, 
+            padding=1,
+            device=self.device
         )
 
         # Skip connection
-        if self.out_channels == self.in_channels:
+        if self.out_channels == self.in_channels and not self.updown:
             self.skip_connection = nn.Identity()
         else:
             self.skip_connection = nn.Conv2d(
                 self.in_channels, 
                 self.out_channels, 
                 kernel_size=1,
-                device=self.device,
+                device=self.device
             )
 
-
-    def forward(self, x, emb, style):  # Add style parameter
+    def forward(self, x, emb):
+        """Forward pass without style conditioning."""
+        # Convert inputs to bfloat16
         x = Utilities.convert_to_bfloat16(x)
         emb = Utilities.convert_to_bfloat16(emb)
-        style = Utilities.convert_to_bfloat16(style)  # Convert style to bfloat16
         
+        # Process skip connection early if we're up/downsampling
         if self.updown:
-            in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
-            h = in_rest(x)
+            h = self.in_norm(x)
+            h = self.in_act(h)
             h = self.h_upd(h)
             x = self.x_upd(x)
-            h = in_conv(h)
+            h = self.in_conv(h)
+            skip = self.skip_connection(x)
         else:
-            h = self.in_layers(x)
-
+            skip = self.skip_connection(x)
+            h = self.in_norm(x)
+            h = self.in_act(h)
+            h = self.in_conv(h)
+        
+        # Process timestep embedding
         emb_out = self.emb_layers(emb)
-
+        
+        # Apply conditioning
         if self.use_scale_shift_norm:
-            out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
+            # Split embedding into scale and shift components
             scale, shift = torch.chunk(emb_out, 2, dim=1)
-            h = out_norm(h) * (1 + scale[:, :, None, None]) + shift[:, :, None, None]
-            h = out_rest(h)
+            
+            # Apply normalization and conditioning
+            h = self.out_norm(h)
+            h = h * (1 + scale[:, :, None, None]) + shift[:, :, None, None]
+            h = self.out_act(h)
         else:
             h = h + emb_out[:, :, None, None]
-            h = self.out_layers(h)
-
-        # Add AdaIN right here, before adding the skip connection
-        h = self.adain(h, style)
-
-        res = self.skip_connection(x) + h
-
-        return res
-    
-
+            h = self.out_norm(h)
+            h = self.out_act(h)
+        
+        h = self.out_dropout(h)
+        h = self.out_conv(h)
+        
+        # Add skip connection
+        return skip + h
 
 
-# # Additinal utility functions
-# def conv_nd(dims, *args, **kwargs):
-#     """
-#     Create a 1D, 2D, or 3D convolution module.
-#     """
-#     if dims == 1:
-#         return nn.Conv1d(*args, **kwargs)
-#     elif dims == 2:
-#         return nn.Conv2d(*args, **kwargs)
-#     elif dims == 3:
-#         return nn.Conv3d(*args, **kwargs)
-#     raise ValueError(f"unsupported dimensions: {dims}")
-
-
-# def linear(*args, **kwargs):
-#     """
-#     Create a linear module.
-#     """
-#     return nn.Linear(*args, **kwargs)
-
-
-# def avg_pool_nd(dims, *args, **kwargs):
-#     """
-#     Create a 1D, 2D, or 3D average pooling module.
-#     """
-#     if dims == 1:
-#         return nn.AvgPool1d(*args, **kwargs)
-#     elif dims == 2:
-#         return nn.AvgPool2d(*args, **kwargs)
-#     elif dims == 3:
-#         return nn.AvgPool3d(*args, **kwargs)
-#     raise ValueError(f"unsupported dimensions: {dims}")
-
-
-# def update_ema(target_params, source_params, rate=0.99):
-#     """
-#     Update target parameters to be closer to those of source parameters using
-#     an exponential moving average.
-
-#     :param target_params: the target parameter sequence.
-#     :param source_params: the source parameter sequence.
-#     :param rate: the EMA rate (closer to 1 means slower).
-#     """
-#     for targ, src in zip(target_params, source_params):
-#         targ.detach().mul_(rate).add_(src, alpha=1 - rate)
-
-
-# def zero_module(module):
-#     """
-#     Zero out the parameters of a module and return it.
-#     """
-#     for p in module.parameters():
-#         p.detach().zero_()
-#     return module
-
-
-# def scale_module(module, scale):
-#     """
-#     Scale the parameters of a module and return it.
-#     """
-#     for p in module.parameters():
-#         p.detach().mul_(scale)
-#     return module
-
-
-# def mean_flat(tensor):
-#     """
-#     Take the mean over all non-batch dimensions.
-#     """
-#     return tensor.mean(dim=list(range(1, len(tensor.shape))))
-
-
-# def append_dims(x, target_dims):
-#     """Appends dimensions to the end of a tensor until it has target_dims dimensions."""
-#     dims_to_append = target_dims - x.ndim
-#     if dims_to_append < 0:
-#         raise ValueError(
-#             f"input has {x.ndim} dims but target_dims is {target_dims}, which is less"
-#         )
-#     return x[(...,) + (None,) * dims_to_append]
-
-
-# def append_zero(x):
-#     return torch.cat([x, x.new_zeros([1])])
-
-# class GroupNormBF16(nn.GroupNorm):
-#     def forward(self, x):
-#         # Temporarily convert to float32 for stability (if needed)
-#         orig_dtype = x.dtype
-#         if orig_dtype == torch.bfloat16:
-#             x = x.to(torch.float32)
-#         x = super().forward(x)
-#         return x.to(orig_dtype)
-
-
-# def normalization(channels):
-#     """
-#     Make a standard normalization layer.
-
-#     :param channels: number of input channels.
-#     :return: an nn.Module for normalization.
-#     """
-#     return GroupNormBF16(32, channels)
+class StyledResBlock(BaseModel):
+    """ResBlock with AdaIN before and after."""
+    def __init__(
+        self,
+        emb_channels: int,
+        dropout: float,
+        in_channels: int = 4,
+        use_conv=False,
+        out_channels: int = None,
+        up=False,
+        down=False,
+        use_scale_shift_norm=True,
+        style_strength=1.0,  # Control style influence
+        device=None,
+        *args,
+        **kwargs
+    ):
+        super().__init__()
+        
+        # Ensure valid channel values
+        self.in_channels = max(in_channels, 1)
+        self.out_channels = max(out_channels or in_channels, 1)
+        self.style_strength = style_strength
+        
+        # AdaIN layers
+        self.pre_adain = SpatialAdaIN(self.in_channels)
+        self.post_adain = SpatialAdaIN(self.out_channels)
+        
+        # Core ResBlock
+        self.resblock = ResBlock(
+            emb_channels=emb_channels,
+            dropout=dropout,
+            in_channels=in_channels,
+            use_conv=use_conv,
+            out_channels=out_channels,
+            up=up,
+            down=down,
+            use_scale_shift_norm=use_scale_shift_norm,
+            device=device,
+            *args,
+            **kwargs
+        )
+        
+    def forward(self, x, emb, style):
+        """Apply style before and after the ResBlock."""
+        # Convert all inputs to bfloat16
+        x = Utilities.convert_to_bfloat16(x)
+        emb = Utilities.convert_to_bfloat16(emb)
+        style = Utilities.convert_to_bfloat16(style)
+        
+        # Weighted style application before ResBlock
+        if self.style_strength > 0:
+            x_styled = self.pre_adain(x, style)
+            x = x * (1 - self.style_strength) + x_styled * self.style_strength
+        
+        # Apply ResBlock
+        h = self.resblock(x, emb)
+        
+        # Weighted style application after ResBlock
+        if self.style_strength > 0:
+            h_styled = self.post_adain(h, style)
+            h = h * (1 - self.style_strength) + h_styled * self.style_strength
+            
+        return h

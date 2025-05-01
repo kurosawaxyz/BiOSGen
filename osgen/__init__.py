@@ -4,7 +4,7 @@
 from osgen.base import BaseModel
 from osgen.embeddings import StyleExtractor, PositionalEmbedding
 from osgen.nn import * 
-from osgen.unet import UNetModel
+from osgen.unet import AdaINUNet
 from osgen.utils import Utilities
 from osgen.vae import VanillaEncoder, VanillaDecoder
 
