@@ -21,9 +21,9 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     
     # 2. Edge detection using Sobel filters
     sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], 
-                        dtype=torch.float32, device=original_image.device).view(1, 1, 3, 3).repeat(3, 1, 1, 1)
+                        dtype=torch.bfloat16, device=original_image.device).view(1, 1, 3, 3).repeat(3, 1, 1, 1)
     sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], 
-                        dtype=torch.float32, device=original_image.device).view(1, 1, 3, 3).repeat(3, 1, 1, 1)
+                        dtype=torch.bfloat16, device=original_image.device).view(1, 1, 3, 3).repeat(3, 1, 1, 1)
 
     
     # Apply edge detection
@@ -62,12 +62,12 @@ def color_alignment_loss(original_image, generated_image, bins=256, lambda_color
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
     # Ensure images are in the range [0, 1]
-    original_image = original_image.clamp(0, 1)
-    generated_image = generated_image.clamp(0, 1)
+    original_img = original_image.clamp(0, 1).to(dtype=torch.float32)
+    generated_img = generated_image.clamp(0, 1).to(dtype=torch.float32)
 
     # Compute histograms for each channel
-    hist_orig = torch.histc(original_image, bins=bins, min=0, max=1).view(1, -1)  # [1, bins]
-    hist_gen = torch.histc(generated_image, bins=bins, min=0, max=1).view(1, -1)  # [1, bins]
+    hist_orig = torch.histc(original_img, bins=bins, min=0, max=1).view(1, -1)  # [1, bins]
+    hist_gen = torch.histc(generated_img, bins=bins, min=0, max=1).view(1, -1)  # [1, bins]
 
     # Normalize histograms
     hist_orig /= hist_orig.sum()
@@ -87,14 +87,30 @@ def color_alignment_loss(original_image, generated_image, bins=256, lambda_color
 vgg = models.vgg19(pretrained=True).features.eval()
 
 def extract_features(image, model, layers):
-    """ Extracts features from specified layers of a CNN """
+    """
+    Extracts features from specified layers of a CNN using bfloat16 precision.
+    
+    Args:
+    - image (torch.Tensor): Input image tensor (should be on GPU).
+    - model (torch.nn.Module): CNN model.
+    - layers (list): Names of layers to extract features from.
+    
+    Returns:
+    - features (dict): Dictionary of extracted features from specified layers.
+    """
     features = {}
-    x = image
+    x = image.to(dtype=torch.bfloat16,device="cuda")
+
+    model = model.to(dtype=torch.bfloat16,device="cuda")  # Convert model weights to bfloat16 (if safe)
+    
     for name, layer in model._modules.items():
-        x = layer(x)
-        if name in layers:
-            features[name] = x
+        with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
+            x = layer(x)
+            if name in layers:
+                features[name] = x.clone()  # Clone to avoid in-place issues
+
     return features
+
 
 def content_loss(original_image, generated_image, lambda_content=1.0):
     """
