@@ -99,7 +99,7 @@ def extract_features(image, model, layers):
     - features (dict): Dictionary of extracted features from specified layers.
     """
     features = {}
-    x = image.to(dtype=torch.bfloat16,device="cuda")
+    x = image
 
     model = model.to(dtype=torch.bfloat16,device="cuda")  # Convert model weights to bfloat16 (if safe)
     
