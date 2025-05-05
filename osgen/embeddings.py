@@ -69,9 +69,9 @@ class StyleExtractor(BaseModel):
 
         # Flatten and apply fc
         x = x.view(x.size(0), x.size(1), -1)
-        print(x.shape)
+        # print(x.shape)
         x = x.permute(0, 2, 1)
-        print(x.shape)
+        # print(x.shape)
         x = self.fc_style(x)
         x = x.permute(0, 2, 1)
         return x  # structured feature map

@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from osgen.base import BaseModel
 from osgen.utils import Utilities
+from osgen.nn import *  # Importing all custom layers from osgen.nn
 
 class VanillaVAE(BaseModel):
 
@@ -304,8 +305,8 @@ class VanillaDecoder(VanillaVAE):
             nn.ReLU(inplace=True),
             
             # Layer 2: 128x32x32 -> 64x64x64
-            nn.ConvTranspose2d(1024, 512, kernel_size=1, stride=1, padding=2),
-            nn.BatchNorm2d(512),
+            nn.ConvTranspose2d(1024, 256, kernel_size=1, stride=1, padding=2),
+            nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             
             # # Layer 3: 64x64x64 -> 32x128x128
@@ -314,8 +315,8 @@ class VanillaDecoder(VanillaVAE):
             # nn.ReLU(inplace=True),
             
             # Final layer: 32x128x128 -> output_channels x 256 x 256
-            nn.ConvTranspose2d(512, output_channels, kernel_size=1, stride=1, padding=1),
-            nn.Tanh()  # Output activation to constrain values between -1 and 1
+            nn.ConvTranspose2d(256, 3, kernel_size=1, stride=1, padding=1),
+            nn.Tanh(),  # Output activation to constrain values between -1 and 1
         )
 
     def forward(self, input: Tensor, show: bool = False, grad: bool = True, **kwargs) -> Tensor:
@@ -340,10 +341,10 @@ class VanillaDecoder(VanillaVAE):
             axes[3].imshow(out[0].permute(1,2,0).float().detach().cpu().numpy(), cmap='viridis')
             ax.set_title(f'Ch {3}', fontsize=8)
 
-        # Detach and convert to numpy
-        if grad:
-            out = out[0].permute(1,2,0).float().detach().cpu().numpy()
-        else: 
-            out = out[0].permute(1,2,0).float().cpu().numpy()
+        # # Detach and convert to numpy
+        # if grad:
+        #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
+        # else: 
+        #     out = out[0].permute(1,2,0).float().cpu().numpy()
         return out
 

@@ -202,22 +202,22 @@ class AdaINUNet(BaseModel):
                 h = module(h)
             hs.append(h)
 
-        plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-        plt.show()
+        # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
+        # plt.show()
         
         # Middle
         h = self.middle_block(h, emb, style)
-        plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-        plt.show()
+        # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
+        # plt.show()
         
         # Upsampling
         for module in self.output_blocks:
-            print("hs: ", len(hs))
+            # print("hs: ", len(hs))
             # Concatenate with skip connection
             h = torch.cat([h, hs.pop()], dim=1)
             h = module(h, emb, style)
-            plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-            plt.show()
+            # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
+            # plt.show()
         
         # Final output
         # h = self.output_layer(h)
