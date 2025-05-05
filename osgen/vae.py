@@ -7,9 +7,11 @@ from torch.nn import functional as F
 from torch import Tensor
 from typing import List
 import numpy as np
+import matplotlib.pyplot as plt
 
 from osgen.base import BaseModel
 from osgen.utils import Utilities
+from osgen.nn import *  # Importing all custom layers from osgen.nn
 
 class VanillaVAE(BaseModel):
 
@@ -295,7 +297,29 @@ class VanillaDecoder(VanillaVAE):
                  hidden_dims: List = None,
                  **kwargs) -> None:
         super(VanillaDecoder, self).__init__(in_channels, latent_dim, hidden_dims, **kwargs)
-    def forward(self, input: Tensor, **kwargs) -> Tensor:
+        # Starting with latent dim 64x64x64
+        self.decoder = nn.Sequential(
+            # Layer 1: 64x64x64 -> 128x32x32
+            nn.ConvTranspose2d(latent_dim, 1024, kernel_size=1, stride=1, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(inplace=True),
+            
+            # Layer 2: 128x32x32 -> 64x64x64
+            nn.ConvTranspose2d(1024, 256, kernel_size=1, stride=1, padding=2),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            
+            # # Layer 3: 64x64x64 -> 32x128x128
+            # nn.ConvTranspose2d(512, 64, kernel_size=1, stride=1, padding=1),
+            # nn.BatchNorm2d(64),
+            # nn.ReLU(inplace=True),
+            
+            # Final layer: 32x128x128 -> output_channels x 256 x 256
+            nn.ConvTranspose2d(256, 3, kernel_size=1, stride=1, padding=1),
+            nn.Tanh(),  # Output activation to constrain values between -1 and 1
+        )
+
+    def forward(self, input: Tensor, show: bool = False, grad: bool = True, **kwargs) -> Tensor:
         """
         Maps the given latent codes
         onto the image space.
@@ -303,4 +327,24 @@ class VanillaDecoder(VanillaVAE):
         :return: (Tensor) List of latent codes
         """
         input = Utilities.convert_to_bfloat16(input)
-        return self.decode(input)
+
+        out = self.decoder(input)
+        if show: 
+            print(f"Decoder output shape: {out.shape}")
+            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x3 grid
+            for i in range(3):
+                ax = axes[i]
+                ax.imshow(out[0, i].float().detach().cpu().numpy(), cmap='viridis')
+                ax.set_title(f'Ch {i}', fontsize=8)
+                # ax.axis('off')
+
+            axes[3].imshow(out[0].permute(1,2,0).float().detach().cpu().numpy(), cmap='viridis')
+            ax.set_title(f'Ch {3}', fontsize=8)
+
+        # # Detach and convert to numpy
+        # if grad:
+        #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
+        # else: 
+        #     out = out[0].permute(1,2,0).float().cpu().numpy()
+        return out
+
