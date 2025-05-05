@@ -346,5 +346,6 @@ class VanillaDecoder(VanillaVAE):
         #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
         # else: 
         #     out = out[0].permute(1,2,0).float().cpu().numpy()
+        out = (((out - out.min()) / (out.max() - out.min()))*255)
         return out
 
