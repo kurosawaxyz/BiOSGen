@@ -172,9 +172,6 @@ class AdaINUNet(BaseModel):
         Returns:
             Output tensor of same shape as input
         """
-        # Check if x is bfloat16
-        if x.dtype != th.bfloat16:
-            raise ValueError("x should be bfloat16")
         
         # Time embedding using our locally defined function
         emb = timestep_embedding(timesteps, self.time_emb_dim)
