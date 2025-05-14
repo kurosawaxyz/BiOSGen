@@ -10,7 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from osgen.base import BaseModel
-from osgen.utils import Utilities
 from osgen.nn import *  # Importing all custom layers from osgen.nn
 
 class VanillaVAE(BaseModel):

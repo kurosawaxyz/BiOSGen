@@ -13,8 +13,6 @@ from flash_attn import flash_attn_func
 import inspect
 
 from osgen.base import BaseModel
-from osgen.utils import Utilities
-
 
 def timestep_embedding(timesteps, dim, max_period=10000):
     """
@@ -75,9 +73,11 @@ class SpatialAdaIN(BaseModel):
         self.channel_reducer = None
         
     def forward(self, content, style):
-        # Convert to bfloat16
-        content = Utilities.convert_to_bfloat16(content)
-        style = Utilities.convert_to_bfloat16(style)
+        # Check if content and style are in bfloat16
+        if content.dtype != torch.bfloat16:
+            raise ValueError("Content must be in bfloat16.")
+        if style.dtype != torch.bfloat16:
+            raise ValueError("Style must be in bfloat16.")
         
         # Resize style spatially to match content
         spatial_resized = F.interpolate(
@@ -223,7 +223,10 @@ class Upsample(BaseModel):
             self.conv = nn.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1)
         
     def forward(self, x):
-        x = Utilities.convert_to_bfloat16(x)
+        # Check if x is in bfloat16
+        if x.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16.")
+        
         x = F.interpolate(x, scale_factor=2, mode="nearest")
         if self.use_conv:
             x = self.conv(x)
@@ -256,7 +259,9 @@ class Downsample(BaseModel):
             self.op = nn.AvgPool2d(kernel_size=stride, stride=stride)
 
     def forward(self, x):
-        x = Utilities.convert_to_bfloat16(x)
+        # Check if x is in bfloat16
+        if x.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16.")
         return self.op(x)
     
 
@@ -347,9 +352,11 @@ class ResBlock(BaseModel):
 
     def forward(self, x, emb):
         """Forward pass without style conditioning."""
-        # Convert inputs to bfloat16
-        x = Utilities.convert_to_bfloat16(x)
-        emb = Utilities.convert_to_bfloat16(emb)
+        # Check if x and emb are in bfloat16
+        if x.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16.")
+        if emb.dtype != torch.bfloat16:
+            raise ValueError("Embedding tensor must be in bfloat16.")
         
         # Process skip connection early if we're up/downsampling
         if self.updown:
@@ -434,10 +441,13 @@ class StyledResBlock(BaseModel):
         
     def forward(self, x, emb, style):
         """Apply style before and after the ResBlock."""
-        # Convert all inputs to bfloat16
-        x = Utilities.convert_to_bfloat16(x)
-        emb = Utilities.convert_to_bfloat16(emb)
-        style = Utilities.convert_to_bfloat16(style)
+        # Check if x, emb, and style are in bfloat16
+        if x.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16.")
+        if emb.dtype != torch.bfloat16:
+            raise ValueError("Embedding tensor must be in bfloat16.")
+        if style.dtype != torch.bfloat16:
+            raise ValueError("Style tensor must be in bfloat16.")
         
         # Weighted style application before ResBlock
         if self.style_strength > 0:
