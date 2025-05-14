@@ -308,7 +308,7 @@ class VanillaDecoder(VanillaVAE):
             nn.Tanh(),  # Output activation to constrain values between -1 and 1
         )
 
-    def forward(self, input: Tensor, show: bool = False, grad: bool = True, **kwargs) -> Tensor:
+    def forward(self, input: Tensor, grad: bool = True, **kwargs) -> Tensor:
         """
         Maps the given latent codes
         onto the image space.
@@ -317,27 +317,7 @@ class VanillaDecoder(VanillaVAE):
         """
 
         out = self.decoder(input)
-
-        # # Detach and convert to numpy
-        # if grad:
-        #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
-        # else: 
-        #     out = out[0].permute(1,2,0).float().cpu().numpy()
-        # out = (((out - out.min()) / (out.max() - out.min()))*255)
-
-        out = (((out - out.min()) / (out.max() - out.min()))*255).to(torch.uint8)
-
-        if show: 
-            print(f"Decoder output shape: {out.shape}")
-            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x4 grid
-            for i in range(3):
-                ax = axes[i]
-                ax.imshow(out[0, i].detach().cpu().numpy(), cmap='viridis')
-                ax.set_title(f'Ch {i}', fontsize=8)
-                # ax.axis('off')
-
-            axes[3].imshow(out[0].permute(1,2,0).detach().cpu().numpy(), cmap='viridis')
-            ax.set_title(f'Ch {3}', fontsize=8)
+        out = (((out - out.min()) / (out.max() - out.min()))*255)
 
         return out
 
