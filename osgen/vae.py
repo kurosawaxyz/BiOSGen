@@ -8,6 +8,7 @@ from torch import Tensor
 from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.amp import autocast
 
 from osgen.base import BaseModel
 from osgen.nn import *  # Importing all custom layers from osgen.nn
@@ -350,11 +351,14 @@ class VanillaDecoder(VanillaVAE):
         #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
         # else: 
         #     out = out[0].permute(1,2,0).float().cpu().numpy()
-        out = (((out - out.min()) / (out.max() - out.min()))*255).to(dtype=torch.uint8)
+        # out = (((out - out.min()) / (out.max() - out.min()))*255)
+
+        with autocast(dtype=torch.uint8):
+            out = (((out - out.min()) / (out.max() - out.min()))*255)
 
         if show: 
             print(f"Decoder output shape: {out.shape}")
-            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x3 grid
+            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x4 grid
             for i in range(3):
                 ax = axes[i]
                 ax.imshow(out[0, i].detach().cpu().numpy(), cmap='viridis')
