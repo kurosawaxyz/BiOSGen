@@ -36,36 +36,59 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
 
     return lambda_structure * (mse_loss + edge_loss)
 
-# Color Alignment Loss
-def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
-    """
-    Compute the Color Alignment Loss (LCA) between the original and generated images.
-    Simplified version with reduced bins and better numerical stability.
-    """
-    if original_image.shape != generated_image.shape:
-        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
-    # Ensure images are in the range [0, 1]
-    original_img = original_image.clamp(0, 1)
-    generated_img = generated_image.clamp(0, 1)
 
-    # Compute histograms for each channel (reduced bins for efficiency)
-    hist_orig = torch.histc(original_img, bins=bins, min=0, max=1).view(1, -1)
-    hist_gen = torch.histc(generated_img, bins=bins, min=0, max=1).view(1, -1)
 
-    # Normalize histograms with epsilon for stability
-    eps = 1e-8
-    hist_orig = hist_orig / (hist_orig.sum() + eps)
-    hist_gen = hist_gen / (hist_gen.sum() + eps)
 
-    # Compute the square root of histograms with epsilon for stability
-    hist_orig_sqrt = torch.sqrt(hist_orig + eps)
-    hist_gen_sqrt = torch.sqrt(hist_gen + eps)
+# # Color Alignment Loss
+# def differentiable_histogram(img, bins=64, min_val=0.0, max_val=1.0, sigma=0.01):
+#     """
+#     Differentiable histogram using soft assignment via Gaussian kernels.
+#     Assumes input `img` is in [0, 1] and of shape [B, C, H, W].
+#     """
+#     B, C, H, W = img.shape
+#     device = img.device
 
-    # Compute L2 distance between the square roots of the histograms
-    color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
+#     # Flatten image to [B, C, N]
+#     img_flat = img.view(B, C, -1)  # [B, C, N]
 
-    return lambda_color * color_loss
+#     # Bin centers
+#     bin_centers = torch.linspace(min_val, max_val, steps=bins, device=device).view(1, 1, bins, 1)  # [1, 1, Bins, 1]
+
+#     # Expand image and compute soft binning using Gaussian kernel
+#     img_exp = img_flat.unsqueeze(2)  # [B, C, 1, N]
+#     bin_diff = (img_exp - bin_centers) ** 2  # [B, C, Bins, N]
+#     soft_bins = torch.exp(-bin_diff / (2 * sigma**2))  # Gaussian weighting
+
+#     # Normalize over pixels to get distribution
+#     hist = soft_bins.sum(dim=-1)  # [B, C, Bins]
+#     hist = hist / (hist.sum(dim=-1, keepdim=True) + 1e-8)  # normalize to sum to 1
+
+#     return hist  # shape: [B, C, bins]
+# def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
+#     if original_image.shape != generated_image.shape:
+#         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+
+#     # Clamp and normalize to [0, 1]
+#     original_img = original_image.clamp(0, 1)
+#     generated_img = generated_image.clamp(0, 1)
+
+#     # Compute differentiable histograms
+#     hist_orig = differentiable_histogram(original_img, bins=bins)
+#     hist_gen = differentiable_histogram(generated_img, bins=bins)
+
+#     # Compute Hellinger-like distance using square root
+#     hist_orig_sqrt = torch.sqrt(hist_orig + 1e-8)
+#     hist_gen_sqrt = torch.sqrt(hist_gen + 1e-8)
+
+#     # Compute mean squared error between histograms
+#     color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
+
+#     return lambda_color * color_loss
+
+
+
+
 
 # Load pre-trained VGG model (only once)
 vgg = None
@@ -146,33 +169,33 @@ def style_loss(original_image, generated_image, lambda_style=1.0):
 
     return lambda_style * loss
 
-def total_loss(original_image, generated_image, 
-               lambda_structure=2e-4, lambda_color=1e-4, 
-               lambda_content=1e-3, lambda_style=1e-8, verbose=False):
-    """
-    Compute the total loss - simplified version
-    """
-    if original_image.shape != generated_image.shape:
-        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+# def total_loss(original_image, generated_image, 
+#                lambda_structure=2e-4, lambda_color=1e-4, 
+#                lambda_content=1e-3, lambda_style=1e-8, verbose=False):
+#     """
+#     Compute the total loss - simplified version
+#     """
+#     if original_image.shape != generated_image.shape:
+#         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
-    # Calculate individual losses with proper error handling
-    structure_loss_val = structure_preservation_loss(original_image, generated_image, lambda_structure)
-    color_loss_val = color_alignment_loss(original_image, generated_image, bins=64, lambda_color=lambda_color)
-    content_loss_val = content_loss(original_image, generated_image, lambda_content)
-    style_loss_val = style_loss(original_image, generated_image, lambda_style)
+#     # Calculate individual losses with proper error handling
+#     structure_loss_val = structure_preservation_loss(original_image, generated_image, lambda_structure)
+#     # color_loss_val = color_alignment_loss(original_image, generated_image, bins=64, lambda_color=lambda_color)
+#     content_loss_val = content_loss(original_image, generated_image, lambda_content)
+#     style_loss_val = style_loss(original_image, generated_image, lambda_style)
     
-    # Replace NaN or Inf values with zeros
-    structure_loss_val = torch.nan_to_num(structure_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-    color_loss_val = torch.nan_to_num(color_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-    content_loss_val = torch.nan_to_num(content_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-    style_loss_val = torch.nan_to_num(style_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
+#     # Replace NaN or Inf values with zeros
+#     structure_loss_val = torch.nan_to_num(structure_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
+#     color_loss_val = torch.nan_to_num(color_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
+#     content_loss_val = torch.nan_to_num(content_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
+#     style_loss_val = torch.nan_to_num(style_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
     
-    if verbose:
-        print(f"Structure Loss: {structure_loss_val.item():.6f}")
-        print(f"Color Loss: {color_loss_val.item():.6f}")
-        print(f"Content Loss: {content_loss_val.item():.6f}")
-        print(f"Style Loss: {style_loss_val.item():.6f}")
+#     if verbose:
+#         print(f"Structure Loss: {structure_loss_val.item():.6f}")
+#         print(f"Color Loss: {color_loss_val.item():.6f}")
+#         print(f"Content Loss: {content_loss_val.item():.6f}")
+#         print(f"Style Loss: {style_loss_val.item():.6f}")
 
-    # Sum all losses
-    total = structure_loss_val + color_loss_val + content_loss_val + style_loss_val
-    return total
+#     # Sum all losses
+#     total = structure_loss_val + color_loss_val + content_loss_val + style_loss_val
+#     return total
