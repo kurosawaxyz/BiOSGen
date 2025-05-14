@@ -109,7 +109,10 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_bfloat16(input)
+        # Check if input is in bfloat16
+        if input.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
+        
         result = self.encoder(input)
         result = result.view(result.size(0), result.size(1), -1)
         result = result.permute(0, 2, 1)
@@ -131,7 +134,10 @@ class VanillaVAE(BaseModel):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        z = Utilities.convert_to_bfloat16(z)
+        # Check if z is in bfloat16
+        if z.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
+    
         result = self.decoder_input(z)
         result = result.view(-1, 512, 16, 16)
         result = self.decoder(result)
@@ -152,8 +158,11 @@ class VanillaVAE(BaseModel):
         mu = mu.view(B, C, H, W)
         logvar = logvar.view(B, C, H, W)
 
-        mu = Utilities.convert_to_bfloat16(mu)
-        logvar = Utilities.convert_to_bfloat16(logvar)
+        # Check if mu and logvar are in bfloat16
+        if mu.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
+        if logvar.dtype != torch.bfloat16:  
+            raise ValueError("Input tensor must be in bfloat16 format.")
 
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
@@ -162,7 +171,6 @@ class VanillaVAE(BaseModel):
         eps = F.avg_pool2d(eps, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
 
         z = eps * std + mu
-        z = Utilities.convert_to_bfloat16(z)
 
         return z.view(B, C, -1)
 
@@ -181,16 +189,17 @@ class VanillaVAE(BaseModel):
         mu = mu.view(B, C, H, W)
         logvar = logvar.view(B, C, H, W)
 
-        mu = Utilities.convert_to_bfloat16(mu)
-        logvar = Utilities.convert_to_bfloat16(logvar)
+        # Check if mu and logvar are in bfloat16
+        if mu.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
+        if logvar.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
 
         std = torch.exp(0.5 * logvar)
 
         # Predict structured noise using learned module
         eps = self.noise_predictor(mu)
-
         z = eps * std + mu
-        z = Utilities.convert_to_bfloat16(z)
 
         return z.view(B, C, -1)
 
@@ -202,7 +211,9 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of tensors [reconstructed, input, mu, log_var]
         """
-        input = Utilities.convert_to_bfloat16(input)
+        # Check if input is in bfloat16
+        if input.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input, mu, log_var]
@@ -272,7 +283,10 @@ class VanillaEncoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_bfloat16(input)
+        # Check if input is in bfloat16
+        if input.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
+        
         mu, log_var = self.encode(input)
         if self.learned:
             z = self.reparameterize_learned(mu, log_var)
@@ -326,26 +340,30 @@ class VanillaDecoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_bfloat16(input)
+        # Check if input is in bfloat16
+        if input.dtype != torch.bfloat16:
+            raise ValueError("Input tensor must be in bfloat16 format.")
 
         out = self.decoder(input)
-        if show: 
-            print(f"Decoder output shape: {out.shape}")
-            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x3 grid
-            for i in range(3):
-                ax = axes[i]
-                ax.imshow(out[0, i].float().detach().cpu().numpy(), cmap='viridis')
-                ax.set_title(f'Ch {i}', fontsize=8)
-                # ax.axis('off')
-
-            axes[3].imshow(out[0].permute(1,2,0).float().detach().cpu().numpy(), cmap='viridis')
-            ax.set_title(f'Ch {3}', fontsize=8)
 
         # # Detach and convert to numpy
         # if grad:
         #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
         # else: 
         #     out = out[0].permute(1,2,0).float().cpu().numpy()
-        out = (((out - out.min()) / (out.max() - out.min()))*255)
+        out = (((out - out.min()) / (out.max() - out.min()))*255).to(dtype=torch.uint8)
+
+        if show: 
+            print(f"Decoder output shape: {out.shape}")
+            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x3 grid
+            for i in range(3):
+                ax = axes[i]
+                ax.imshow(out[0, i].detach().cpu().numpy(), cmap='viridis')
+                ax.set_title(f'Ch {i}', fontsize=8)
+                # ax.axis('off')
+
+            axes[3].imshow(out[0].permute(1,2,0).detach().cpu().numpy(), cmap='viridis')
+            ax.set_title(f'Ch {3}', fontsize=8)
+
         return out
 
