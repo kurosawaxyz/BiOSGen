@@ -109,9 +109,6 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        # Check if input is in bfloat16
-        if input.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
         
         result = self.encoder(input)
         result = result.view(result.size(0), result.size(1), -1)
@@ -134,9 +131,6 @@ class VanillaVAE(BaseModel):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        # Check if z is in bfloat16
-        if z.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
     
         result = self.decoder_input(z)
         result = result.view(-1, 512, 16, 16)
@@ -157,12 +151,6 @@ class VanillaVAE(BaseModel):
 
         mu = mu.view(B, C, H, W)
         logvar = logvar.view(B, C, H, W)
-
-        # Check if mu and logvar are in bfloat16
-        if mu.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
-        if logvar.dtype != torch.bfloat16:  
-            raise ValueError("Input tensor must be in bfloat16 format.")
 
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
@@ -189,12 +177,6 @@ class VanillaVAE(BaseModel):
         mu = mu.view(B, C, H, W)
         logvar = logvar.view(B, C, H, W)
 
-        # Check if mu and logvar are in bfloat16
-        if mu.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
-        if logvar.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
-
         std = torch.exp(0.5 * logvar)
 
         # Predict structured noise using learned module
@@ -211,9 +193,6 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of tensors [reconstructed, input, mu, log_var]
         """
-        # Check if input is in bfloat16
-        if input.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input, mu, log_var]
@@ -283,9 +262,6 @@ class VanillaEncoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        # Check if input is in bfloat16
-        if input.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
         
         mu, log_var = self.encode(input)
         if self.learned:
@@ -340,9 +316,6 @@ class VanillaDecoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        # Check if input is in bfloat16
-        if input.dtype != torch.bfloat16:
-            raise ValueError("Input tensor must be in bfloat16 format.")
 
         out = self.decoder(input)
 
