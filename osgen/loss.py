@@ -12,6 +12,8 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
     Structural preservation loss combining pixel-level MSE and Sobel edge similarity.
 
     Note: Actually the same definition as content loss, structure is merely equal to content, this one hits really hard with color too so not recommended. 
+
+    In fact, the structure of the original tumor is well preserved in the generated image thanks to ResBlock + VAE.
     """
     if original_image.shape != generated_image.shape:
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="nearest")
@@ -71,7 +73,7 @@ def differentiable_histogram(img, bins=64, min_val=0.0, max_val=1.0, sigma=0.01)
 
 def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
     """
-    Note: This loss is not recommended, it actually breaks the entire output image instead of aligning colors.
+    Note: This loss is not recommended, it will maintain the color of the original image instead of transferring new staining style to it.
     """
     if original_image.shape != generated_image.shape:
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
@@ -111,7 +113,7 @@ def get_vgg_model():
         vgg = models.vgg19(weights=weights).features.eval()    # currently using pretrained weights
         # Freeze parameters to avoid unnecessary computation
         for param in vgg.parameters():
-            param.requires_grad = True
+            param.requires_grad = False     # put as True may give nice insights but slow down the training
     return vgg
 
 def extract_features(image, layers):
