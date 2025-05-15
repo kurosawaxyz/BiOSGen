@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 
 from osgen.base import BaseModel
 from osgen.nn import * 
-from osgen.utils import Utilities
-
 
 class AdaINUNet(BaseModel):
     """
@@ -174,8 +172,6 @@ class AdaINUNet(BaseModel):
         Returns:
             Output tensor of same shape as input
         """
-        # Convert inputs to bfloat16
-        x = Utilities.convert_to_bfloat16(x)
         
         # Time embedding using our locally defined function
         emb = timestep_embedding(timesteps, self.time_emb_dim)
@@ -187,8 +183,6 @@ class AdaINUNet(BaseModel):
             batch_size = x.shape[0]
             # Use a small channel dimension that will be properly handled by StyledResBlock
             style = torch.zeros(batch_size, 1, 1, 1, device=x.device, dtype=x.dtype)
-        else:
-            style = Utilities.convert_to_bfloat16(style)
         
         # Initial processing
         h = x

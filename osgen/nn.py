@@ -1,6 +1,3 @@
-
-
-
 # -*- coding: utf-8 -*-
 # @Author: H. T. Duong Vu
 
@@ -13,8 +10,6 @@ from flash_attn import flash_attn_func
 import inspect
 
 from osgen.base import BaseModel
-from osgen.utils import Utilities
-
 
 def timestep_embedding(timesteps, dim, max_period=10000):
     """
@@ -28,7 +23,7 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     """
     half = dim // 2
     freqs = torch.exp(
-        -math.log(max_period) * torch.arange(start=0, end=half, dtype=torch.bfloat16) / half
+        -math.log(max_period) * torch.arange(start=0, end=half) / half
     ).to(device=timesteps.device)
     args = timesteps[:, None].float() * freqs[None]
     embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
@@ -75,9 +70,6 @@ class SpatialAdaIN(BaseModel):
         self.channel_reducer = None
         
     def forward(self, content, style):
-        # Convert to bfloat16
-        content = Utilities.convert_to_bfloat16(content)
-        style = Utilities.convert_to_bfloat16(style)
         
         # Resize style spatially to match content
         spatial_resized = F.interpolate(
@@ -97,7 +89,7 @@ class SpatialAdaIN(BaseModel):
                     spatial_resized.shape[1], 
                     content.shape[1], 
                     kernel_size=1
-                ).to(content.device).to(torch.bfloat16)
+                ).to(content.device)
                 
             style_features = self.channel_reducer(spatial_resized)
         else:
@@ -167,17 +159,12 @@ class FlashSelfAttention(BaseModel, ABC):
             # Compute attention scores
             attn_scores = torch.matmul(Q_vis, K_vis.transpose(-1, -2)) * self.scale  # (B, heads, HW, HW)
             attention_weights = torch.softmax(attn_scores, dim=-1)  # (B, heads, HW, HW)
-        
-        # Convert to fp16 or bf16 for flash attention
-        if torch.cuda.is_available() and torch.cuda.is_bf16_supported():
-            dtype = torch.bfloat16
-        else:
-            dtype = torch.float16
-            
+
+        dtype = torch.float16 if z.dtype == torch.float32 else z.dtype
         Q = Q.to(dtype)
         K = K.to(dtype)
         V = V.to(dtype)
-        
+
         # Use flash_attn for self-attention
         attn_output = flash_attn_func(
             Q, K, V,
@@ -223,7 +210,7 @@ class Upsample(BaseModel):
             self.conv = nn.Conv2d(in_channels, self.out_channels, kernel_size=3, padding=1)
         
     def forward(self, x):
-        x = Utilities.convert_to_bfloat16(x)
+        
         x = F.interpolate(x, scale_factor=2, mode="nearest")
         if self.use_conv:
             x = self.conv(x)
@@ -256,7 +243,6 @@ class Downsample(BaseModel):
             self.op = nn.AvgPool2d(kernel_size=stride, stride=stride)
 
     def forward(self, x):
-        x = Utilities.convert_to_bfloat16(x)
         return self.op(x)
     
 
@@ -347,9 +333,6 @@ class ResBlock(BaseModel):
 
     def forward(self, x, emb):
         """Forward pass without style conditioning."""
-        # Convert inputs to bfloat16
-        x = Utilities.convert_to_bfloat16(x)
-        emb = Utilities.convert_to_bfloat16(emb)
         
         # Process skip connection early if we're up/downsampling
         if self.updown:
@@ -434,10 +417,6 @@ class StyledResBlock(BaseModel):
         
     def forward(self, x, emb, style):
         """Apply style before and after the ResBlock."""
-        # Convert all inputs to bfloat16
-        x = Utilities.convert_to_bfloat16(x)
-        emb = Utilities.convert_to_bfloat16(emb)
-        style = Utilities.convert_to_bfloat16(style)
         
         # Weighted style application before ResBlock
         if self.style_strength > 0:

@@ -10,7 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from osgen.base import BaseModel
-from osgen.utils import Utilities
 from osgen.nn import *  # Importing all custom layers from osgen.nn
 
 class VanillaVAE(BaseModel):
@@ -109,7 +108,7 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_bfloat16(input)
+        
         result = self.encoder(input)
         result = result.view(result.size(0), result.size(1), -1)
         result = result.permute(0, 2, 1)
@@ -131,7 +130,7 @@ class VanillaVAE(BaseModel):
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        z = Utilities.convert_to_bfloat16(z)
+    
         result = self.decoder_input(z)
         result = result.view(-1, 512, 16, 16)
         result = self.decoder(result)
@@ -152,9 +151,6 @@ class VanillaVAE(BaseModel):
         mu = mu.view(B, C, H, W)
         logvar = logvar.view(B, C, H, W)
 
-        mu = Utilities.convert_to_bfloat16(mu)
-        logvar = Utilities.convert_to_bfloat16(logvar)
-
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
 
@@ -162,7 +158,6 @@ class VanillaVAE(BaseModel):
         eps = F.avg_pool2d(eps, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
 
         z = eps * std + mu
-        z = Utilities.convert_to_bfloat16(z)
 
         return z.view(B, C, -1)
 
@@ -181,16 +176,11 @@ class VanillaVAE(BaseModel):
         mu = mu.view(B, C, H, W)
         logvar = logvar.view(B, C, H, W)
 
-        mu = Utilities.convert_to_bfloat16(mu)
-        logvar = Utilities.convert_to_bfloat16(logvar)
-
         std = torch.exp(0.5 * logvar)
 
         # Predict structured noise using learned module
         eps = self.noise_predictor(mu)
-
         z = eps * std + mu
-        z = Utilities.convert_to_bfloat16(z)
 
         return z.view(B, C, -1)
 
@@ -202,7 +192,6 @@ class VanillaVAE(BaseModel):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of tensors [reconstructed, input, mu, log_var]
         """
-        input = Utilities.convert_to_bfloat16(input)
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input, mu, log_var]
@@ -272,7 +261,7 @@ class VanillaEncoder(VanillaVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_bfloat16(input)
+        
         mu, log_var = self.encode(input)
         if self.learned:
             z = self.reparameterize_learned(mu, log_var)
@@ -319,32 +308,16 @@ class VanillaDecoder(VanillaVAE):
             nn.Tanh(),  # Output activation to constrain values between -1 and 1
         )
 
-    def forward(self, input: Tensor, show: bool = False, grad: bool = True, **kwargs) -> Tensor:
+    def forward(self, input: Tensor, grad: bool = True, **kwargs) -> Tensor:
         """
         Maps the given latent codes
         onto the image space.
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        input = Utilities.convert_to_bfloat16(input)
 
         out = self.decoder(input)
-        if show: 
-            print(f"Decoder output shape: {out.shape}")
-            fig, axes = plt.subplots(1, 4, figsize=(15, 15))  # 1x3 grid
-            for i in range(3):
-                ax = axes[i]
-                ax.imshow(out[0, i].float().detach().cpu().numpy(), cmap='viridis')
-                ax.set_title(f'Ch {i}', fontsize=8)
-                # ax.axis('off')
+        out = (((out - out.min()) / (out.max() - out.min()))*255)
 
-            axes[3].imshow(out[0].permute(1,2,0).float().detach().cpu().numpy(), cmap='viridis')
-            ax.set_title(f'Ch {3}', fontsize=8)
-
-        # # Detach and convert to numpy
-        # if grad:
-        #     out = out[0].permute(1,2,0).float().detach().cpu().numpy()
-        # else: 
-        #     out = out[0].permute(1,2,0).float().cpu().numpy()
         return out
 
