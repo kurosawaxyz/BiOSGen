@@ -111,7 +111,7 @@ def get_vgg_model():
         vgg = models.vgg19(weights=weights).features.eval()    # currently using pretrained weights
         # Freeze parameters to avoid unnecessary computation
         for param in vgg.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
     return vgg
 
 def extract_features(image, layers):
