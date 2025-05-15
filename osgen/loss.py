@@ -4,11 +4,14 @@
 import torch
 import torch.nn.functional as F
 import torchvision.models as models
+from torchvision.models import VGG19_Weights
 
 # Structure loss
 def structure_preservation_loss(original_image, generated_image, lambda_structure=1.0):
     """
     Structural preservation loss combining pixel-level MSE and Sobel edge similarity.
+
+    Note: Actually the same definition as content loss, structure is merely equal to content, this one hits really hard with color too so not recommended. 
     """
     if original_image.shape != generated_image.shape:
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="nearest")
@@ -67,6 +70,9 @@ def differentiable_histogram(img, bins=64, min_val=0.0, max_val=1.0, sigma=0.01)
     return hist  # shape: [B, C, bins]
 
 def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
+    """
+    Note: This loss is not recommended, it actually breaks the entire output image instead of aligning colors.
+    """
     if original_image.shape != generated_image.shape:
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
@@ -91,6 +97,7 @@ def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=
 
 
 
+# Content Loss
 # Load pre-trained VGG model (only once)
 vgg = None
 
@@ -100,7 +107,8 @@ def get_vgg_model():
     """
     global vgg
     if vgg is None:
-        vgg = models.vgg19(pretrained=True).features.eval()
+        weights = VGG19_Weights.DEFAULT  # or VGG19_Weights.IMAGENET1K_V1
+        vgg = models.vgg19(weights=weights).features.eval()
         # Freeze parameters to avoid unnecessary computation
         for param in vgg.parameters():
             param.requires_grad = False
@@ -128,10 +136,12 @@ def extract_features(image, layers):
 def content_loss(original_image, generated_image, lambda_content=1.0):
     """
     Compute content loss between original and generated images using VGG-19.
+
     Note: The most effective loss among 4 losses, works well with low lambda and alone.
     """
     if original_image.shape != generated_image.shape:
-        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", 
+        align_corners=False)
 
     content_layers = ["21"]  # Use ReLU4_2 layer (high-level features)
     orig_features = extract_features(original_image, content_layers)
@@ -141,6 +151,8 @@ def content_loss(original_image, generated_image, lambda_content=1.0):
     
     return lambda_content * loss
 
+
+# Style Loss
 def gram_matrix(features):
     """
     Compute Gram matrix of feature maps with improved numerical stability
@@ -154,6 +166,8 @@ def gram_matrix(features):
 def style_loss(original_image, generated_image, lambda_style=1.0):
     """
     Compute style loss between original and generated images.
+
+    Note: This variant of Style loss actually maintain the structure, and also the original color, leading the style color enable to be transferred.
     """
     if original_image.shape != generated_image.shape:
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
