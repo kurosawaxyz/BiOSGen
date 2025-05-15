@@ -107,8 +107,8 @@ def get_vgg_model():
     """
     global vgg
     if vgg is None:
-        weights = VGG19_Weights.DEFAULT  # or VGG19_Weights.IMAGENET1K_V1
-        vgg = models.vgg19(weights=weights).features.eval()
+        weights = VGG19_Weights.IMAGENET1K_V1  # or VGG19_Weights.DEFAULT
+        vgg = models.vgg19(weights=weights).features.eval()    # currently using pretrained weights
         # Freeze parameters to avoid unnecessary computation
         for param in vgg.parameters():
             param.requires_grad = False
