@@ -40,51 +40,52 @@ def structure_preservation_loss(original_image, generated_image, lambda_structur
 
 
 
-# # Color Alignment Loss
-# def differentiable_histogram(img, bins=64, min_val=0.0, max_val=1.0, sigma=0.01):
-#     """
-#     Differentiable histogram using soft assignment via Gaussian kernels.
-#     Assumes input `img` is in [0, 1] and of shape [B, C, H, W].
-#     """
-#     B, C, H, W = img.shape
-#     device = img.device
+# Color Alignment Loss
+def differentiable_histogram(img, bins=64, min_val=0.0, max_val=1.0, sigma=0.01):
+    """
+    Differentiable histogram using soft assignment via Gaussian kernels.
+    Assumes input `img` is in [0, 1] and of shape [B, C, H, W].
+    """
+    B, C, H, W = img.shape
+    device = img.device
 
-#     # Flatten image to [B, C, N]
-#     img_flat = img.view(B, C, -1)  # [B, C, N]
+    # Flatten image to [B, C, N]
+    img_flat = img.view(B, C, -1)  # [B, C, N]
 
-#     # Bin centers
-#     bin_centers = torch.linspace(min_val, max_val, steps=bins, device=device).view(1, 1, bins, 1)  # [1, 1, Bins, 1]
+    # Bin centers
+    bin_centers = torch.linspace(min_val, max_val, steps=bins, device=device).view(1, 1, bins, 1)  # [1, 1, Bins, 1]
 
-#     # Expand image and compute soft binning using Gaussian kernel
-#     img_exp = img_flat.unsqueeze(2)  # [B, C, 1, N]
-#     bin_diff = (img_exp - bin_centers) ** 2  # [B, C, Bins, N]
-#     soft_bins = torch.exp(-bin_diff / (2 * sigma**2))  # Gaussian weighting
+    # Expand image and compute soft binning using Gaussian kernel
+    img_exp = img_flat.unsqueeze(2)  # [B, C, 1, N]
+    bin_diff = (img_exp - bin_centers) ** 2  # [B, C, Bins, N]
+    soft_bins = torch.exp(-bin_diff / (2 * sigma**2))  # Gaussian weighting
 
-#     # Normalize over pixels to get distribution
-#     hist = soft_bins.sum(dim=-1)  # [B, C, Bins]
-#     hist = hist / (hist.sum(dim=-1, keepdim=True) + 1e-8)  # normalize to sum to 1
+    # Normalize over pixels to get distribution
+    hist = soft_bins.sum(dim=-1)  # [B, C, Bins]
+    hist = hist / (hist.sum(dim=-1, keepdim=True) + 1e-8)  # normalize to sum to 1
 
-#     return hist  # shape: [B, C, bins]
-# def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
-#     if original_image.shape != generated_image.shape:
-#         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
+    return hist  # shape: [B, C, bins]
 
-#     # Clamp and normalize to [0, 1]
-#     original_img = original_image.clamp(0, 1)
-#     generated_img = generated_image.clamp(0, 1)
+def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
+    if original_image.shape != generated_image.shape:
+        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
-#     # Compute differentiable histograms
-#     hist_orig = differentiable_histogram(original_img, bins=bins)
-#     hist_gen = differentiable_histogram(generated_img, bins=bins)
+    # Clamp and normalize to [0, 1]
+    original_img = original_image.clamp(0, 1)
+    generated_img = generated_image.clamp(0, 1)
 
-#     # Compute Hellinger-like distance using square root
-#     hist_orig_sqrt = torch.sqrt(hist_orig + 1e-8)
-#     hist_gen_sqrt = torch.sqrt(hist_gen + 1e-8)
+    # Compute differentiable histograms
+    hist_orig = differentiable_histogram(original_img, bins=bins)
+    hist_gen = differentiable_histogram(generated_img, bins=bins)
 
-#     # Compute mean squared error between histograms
-#     color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
+    # Compute Hellinger-like distance using square root
+    hist_orig_sqrt = torch.sqrt(hist_orig + 1e-8)
+    hist_gen_sqrt = torch.sqrt(hist_gen + 1e-8)
 
-#     return lambda_color * color_loss
+    # Compute mean squared error between histograms
+    color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
+
+    return lambda_color * color_loss
 
 
 
@@ -127,6 +128,7 @@ def extract_features(image, layers):
 def content_loss(original_image, generated_image, lambda_content=1.0):
     """
     Compute content loss between original and generated images using VGG-19.
+    Note: The most effective loss among 4 losses, works well with low lambda and alone.
     """
     if original_image.shape != generated_image.shape:
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
