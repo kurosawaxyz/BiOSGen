@@ -6,99 +6,6 @@ import torch.nn.functional as F
 import torchvision.models as models
 from torchvision.models import VGG19_Weights
 
-# Structure loss
-def structure_preservation_loss(original_image, generated_image, lambda_structure=1.0):
-    """
-    Structural preservation loss combining pixel-level MSE and Sobel edge similarity.
-
-    Note: Actually the same definition as content loss, structure is merely equal to content, this one hits really hard with color too so not recommended. 
-
-    In fact, the structure of the original tumor is well preserved in the generated image thanks to ResBlock + VAE.
-    """
-    if original_image.shape != generated_image.shape:
-        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="nearest")
-
-    # Ensure float32
-    original_image = original_image.float()
-    generated_image = generated_image.float()
-
-    # Pixel-level MSE loss
-    mse_loss = F.mse_loss(original_image, generated_image)
-
-    # Sobel filters (for 3-channel RGB)
-    sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32, device=original_image.device).repeat(3, 1, 1, 1)
-    sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=torch.float32, device=original_image.device).repeat(3, 1, 1, 1)
-
-    # Edge maps
-    orig_edges = torch.sqrt(F.conv2d(original_image, sobel_x, padding=1, groups=3)**2 +
-                            F.conv2d(original_image, sobel_y, padding=1, groups=3)**2 + 1e-8)
-    
-    gen_edges = torch.sqrt(F.conv2d(generated_image, sobel_x, padding=1, groups=3)**2 +
-                           F.conv2d(generated_image, sobel_y, padding=1, groups=3)**2 + 1e-8)
-
-    # Edge loss
-    edge_loss = F.mse_loss(gen_edges, orig_edges)
-
-    return lambda_structure * (mse_loss + edge_loss)
-
-
-
-
-
-# Color Alignment Loss
-def differentiable_histogram(img, bins=64, min_val=0.0, max_val=1.0, sigma=0.01):
-    """
-    Differentiable histogram using soft assignment via Gaussian kernels.
-    Assumes input `img` is in [0, 1] and of shape [B, C, H, W].
-    """
-    B, C, H, W = img.shape
-    device = img.device
-
-    # Flatten image to [B, C, N]
-    img_flat = img.view(B, C, -1)  # [B, C, N]
-
-    # Bin centers
-    bin_centers = torch.linspace(min_val, max_val, steps=bins, device=device).view(1, 1, bins, 1)  # [1, 1, Bins, 1]
-
-    # Expand image and compute soft binning using Gaussian kernel
-    img_exp = img_flat.unsqueeze(2)  # [B, C, 1, N]
-    bin_diff = (img_exp - bin_centers) ** 2  # [B, C, Bins, N]
-    soft_bins = torch.exp(-bin_diff / (2 * sigma**2))  # Gaussian weighting
-
-    # Normalize over pixels to get distribution
-    hist = soft_bins.sum(dim=-1)  # [B, C, Bins]
-    hist = hist / (hist.sum(dim=-1, keepdim=True) + 1e-8)  # normalize to sum to 1
-
-    return hist  # shape: [B, C, bins]
-
-def color_alignment_loss(original_image, generated_image, bins=64, lambda_color=1.0):
-    """
-    Note: This loss is not recommended, it will maintain the color of the original image instead of transferring new staining style to it.
-    """
-    if original_image.shape != generated_image.shape:
-        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
-
-    # Clamp and normalize to [0, 1]
-    original_img = original_image.clamp(0, 1)
-    generated_img = generated_image.clamp(0, 1)
-
-    # Compute differentiable histograms
-    hist_orig = differentiable_histogram(original_img, bins=bins)
-    hist_gen = differentiable_histogram(generated_img, bins=bins)
-
-    # Compute Hellinger-like distance using square root
-    hist_orig_sqrt = torch.sqrt(hist_orig + 1e-8)
-    hist_gen_sqrt = torch.sqrt(hist_gen + 1e-8)
-
-    # Compute mean squared error between histograms
-    color_loss = F.mse_loss(hist_orig_sqrt, hist_gen_sqrt)
-
-    return lambda_color * color_loss
-
-
-
-
-
 # Content Loss
 # Load pre-trained VGG model (only once)
 vgg = None
@@ -160,31 +67,49 @@ def gram_matrix(features):
     Compute Gram matrix of feature maps with improved numerical stability
     """
     B, C, H, W = features.shape
-    features = features.view(C, H * W)
-    G = torch.mm(features, features.t())
+    features = features.view(B, C, H * W)  # Keep batch dimension
+    
+    # Reshape preserving batch dimension
+    gram_matrices = torch.bmm(features, features.transpose(1, 2))
+    
     # Normalize with epsilon for numerical stability
-    return G / (C * H * W + 1e-8)
+    return gram_matrices / (C * H * W + 1e-8)
 
-def style_loss(original_image, generated_image, lambda_style=1.0):
+def style_loss(style_image, generated_image, style_layers=None, layer_weights=None, lambda_style=1.0):
     """
-    Compute style loss between original and generated images.
-
-    Note: This variant of Style loss actually maintain the structure, and also the original color, leading the style color enable to be transferred.
+    Compute style loss between style reference image and generated image.
+    
+    Args:
+        style_image: The style reference image (the one whose style we want to capture)
+        generated_image: The image being generated/optimized
+        style_layers: List of VGG layers to extract features from
+        layer_weights: Optional weights for each layer's contribution
+        lambda_style: Overall weight for style loss
     """
-    if original_image.shape != generated_image.shape:
-        generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
-
-    # Reduced number of layers for efficiency
-    style_layers = ["0", "5", "10", "19"]
-    orig_features = extract_features(original_image, style_layers)
+    if style_image.shape != generated_image.shape:
+        generated_image = F.interpolate(generated_image, 
+                                       size=style_image.shape[2:], 
+                                       mode="bilinear", 
+                                       align_corners=False)
+    
+    # Default layers if none provided
+    if style_layers is None:
+        style_layers = ["0", "5", "10", "19", "28"]  # Including more layers for better style capture
+    
+    # Default weights if none provided
+    if layer_weights is None:
+        layer_weights = [1.0] * len(style_layers)
+    
+    style_features = extract_features(style_image, style_layers)
     gen_features = extract_features(generated_image, style_layers)
-
+    
     loss = 0
-    for layer in style_layers:
-        G_orig = gram_matrix(orig_features[layer])
+    for i, layer in enumerate(style_layers):
+        weight = layer_weights[i]
+        G_style = gram_matrix(style_features[layer])
         G_gen = gram_matrix(gen_features[layer])
-        loss += F.mse_loss(G_gen, G_orig)
-
+        loss += weight * F.mse_loss(G_gen, G_style)
+    
     return lambda_style * loss
 
 # def total_loss(original_image, generated_image, 
