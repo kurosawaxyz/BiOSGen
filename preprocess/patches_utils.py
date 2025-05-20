@@ -103,7 +103,7 @@ class PatchesUtilities:
         tissue_mask: np.ndarray,
         patch_size: int = 512,
         patch_tissue_threshold: float = 0.7,
-        is_visualize: bool = True
+        is_visualize: bool = False
     ) -> List[np.ndarray]:
         patch_threshold = int(patch_size * patch_size * patch_tissue_threshold)
         
