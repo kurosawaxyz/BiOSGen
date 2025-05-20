@@ -284,6 +284,7 @@ class VanillaDecoder(VanillaVAE):
                  in_channels: int,
                  latent_dim: int,
                  hidden_dims: List = None,
+                 output_channels=3,
                  **kwargs) -> None:
         super(VanillaDecoder, self).__init__(in_channels, latent_dim, hidden_dims, **kwargs)
         # Starting with latent dim 64x64x64
@@ -304,7 +305,7 @@ class VanillaDecoder(VanillaVAE):
             # nn.ReLU(inplace=True),
             
             # Final layer: 32x128x128 -> output_channels x 256 x 256
-            nn.ConvTranspose2d(256, 3, kernel_size=1, stride=1, padding=1),
+            nn.ConvTranspose2d(256, output_channels, kernel_size=1, stride=1, padding=1),
             nn.Tanh(),  # Output activation to constrain values between -1 and 1
         )
 
