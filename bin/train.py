@@ -48,6 +48,17 @@ def main():
     print("Nb antibodies: ", tree_src.get_nb_antibodies())
     print("Nb antibodies: ", tree_dst.get_nb_antibodies())
 
+    # Randomly select patches
+    patches_src = PatchesUtilities.get_image_patches(
+        image = np.array(Image.open(tree_src.antibodies[torch.randint(0, len(tree_src.antibodies), (1,)).item()])),
+        tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_src.antibodies[torch.randint(0, len(tree_src.antibodies), (1,)).item()]))),
+    )
+
+    patches_dst = PatchesUtilities.get_image_patches(
+        image = np.array(Image.open(tree_dst.antibodies[torch.randint(0, len(tree_dst.antibodies), (1,)).item()])),
+        tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_dst.antibodies[torch.randint(0, len(tree_dst.antibodies), (1,)).item()]))),
+    )
+
     # Define pipeline
     pipeline = OSGenPipeline()
 
@@ -107,17 +118,6 @@ def main():
         # print(f"Epoch {epoch+1}/{num_epochs}")
         epoch_losses = []
         avg_loss = []
-
-        # Randomly select patches
-        patches_src = PatchesUtilities.get_image_patches(
-            image = np.array(Image.open(tree_src.antibodies[epoch])),
-            tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_src.antibodies[epoch]))),
-        )
-
-        patches_dst = PatchesUtilities.get_image_patches(
-            image = np.array(Image.open(tree_dst.antibodies[epoch])),
-            tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_dst.antibodies[epoch]))),
-        )
 
         for i, (src, dst) in enumerate(zip(patches_src, patches_dst)):
             # Convert to tensors
