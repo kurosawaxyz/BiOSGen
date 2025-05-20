@@ -1,0 +1,19 @@
+verbose: True
+num_epochs: 50
+batch_size: 1
+lr: 1e-3
+channels: 64
+height: 128
+width: 128
+
+optimizer: 
+  type: Adam
+  params:
+    lr: 1e-3
+    weight_decay: 1e-6
+    eps: 1e-8
+
+early_stopping_patience: 10
+
+lambda_content: 1e-3
+lambda_style: 1e-4
