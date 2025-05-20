@@ -1,5 +1,5 @@
 verbose: True
-num_epochs: 100
+num_epochs: 20
 batch_size: 1
 lr: 1e-3
 channels: 64
