@@ -49,15 +49,19 @@ def main():
     print("Nb antibodies: ", tree_dst.get_nb_antibodies())
 
     # Randomly select patches
+    idx_src = torch.randint(0, len(tree_src.antibodies), (1,)).item()
     patches_src = PatchesUtilities.get_image_patches(
-        image = np.array(Image.open(tree_src.antibodies[torch.randint(0, len(tree_src.antibodies), (1,)).item()])),
-        tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_src.antibodies[torch.randint(0, len(tree_src.antibodies), (1,)).item()]))),
+        image = np.array(Image.open(tree_src.antibodies[idx_src])),
+        tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_src.antibodies[idx_src]))),
     )
 
+    idx_dst = torch.randint(0, len(tree_dst.antibodies), (1,)).item()
     patches_dst = PatchesUtilities.get_image_patches(
-        image = np.array(Image.open(tree_dst.antibodies[torch.randint(0, len(tree_dst.antibodies), (1,)).item()])),
-        tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_dst.antibodies[torch.randint(0, len(tree_dst.antibodies), (1,)).item()]))),
+        image = np.array(Image.open(tree_dst.antibodies[idx_dst])),
+        tissue_mask = PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_dst.antibodies[idx_dst]))),
     )
+    print("idx_src: ", idx_src)
+    print("idx_dst: ", idx_dst)
 
     # Define pipeline
     pipeline = OSGenPipeline()
