@@ -45,7 +45,8 @@ def extract_features(image, layers):
 def content_loss(original_image, generated_image, lambda_content=1.0):
     """
     Compute content loss between original and generated images using VGG-19.
-
+    Formula: L_content = sum((phi_j(y_test) - phi_j(y_ref))^2) / (C_j * H_j * W_j)
+    
     Note: The most effective loss among 4 losses, works well with low lambda and alone.
     """
     if original_image.shape != generated_image.shape:
@@ -56,7 +57,16 @@ def content_loss(original_image, generated_image, lambda_content=1.0):
     orig_features = extract_features(original_image, content_layers)
     gen_features = extract_features(generated_image, content_layers)
     
-    loss = F.mse_loss(gen_features["21"], orig_features["21"])
+    # Get feature maps
+    orig_feat = orig_features["21"]
+    gen_feat = gen_features["21"]
+    
+    # Calculate dimensions for normalization
+    B, C, H, W = orig_feat.shape
+    
+    # Calculate content loss with proper normalization as per formula
+    # L_content = sum((generated - content)^2) / (C * H * W)
+    loss = torch.sum((gen_feat - orig_feat) ** 2) / (C * H * W)
     
     return lambda_content * loss
 
@@ -64,20 +74,24 @@ def content_loss(original_image, generated_image, lambda_content=1.0):
 # Style Loss
 def gram_matrix(features):
     """
-    Compute Gram matrix of feature maps with improved numerical stability
+    Compute Gram matrix of feature maps
+    Formula: G_j(x) = sum(phi_j(y_test) * phi_j(y_ref)) / (C_j * H_j * W_j)
     """
     B, C, H, W = features.shape
-    features = features.view(B, C, H * W)  # Keep batch dimension
     
-    # Reshape preserving batch dimension
+    # Reshape features to (B, C, H*W)
+    features = features.view(B, C, H * W)
+    
+    # Compute gram matrix: G = F * F^T
     gram_matrices = torch.bmm(features, features.transpose(1, 2))
     
-    # Normalize with epsilon for numerical stability
-    return gram_matrices / (C * H * W + 1e-8)
+    # Normalize by the number of elements (C * H * W) as per the formula
+    return gram_matrices / (C * H * W)
 
 def style_loss(style_image, generated_image, style_layers=None, layer_weights=None, lambda_style=1.0):
     """
     Compute style loss between style reference image and generated image.
+    Style loss is the squared distance (Frobenius norm) between gram matrices.
     
     Args:
         style_image: The style reference image (the one whose style we want to capture)
@@ -92,7 +106,7 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
                                        mode="bilinear", 
                                        align_corners=False)
     
-    # Default layers if none provided
+    # Default layers if none provided - using lower and mid-level features for style
     if style_layers is None:
         style_layers = ["0", "5", "10", "19", "28"]  # Including more layers for better style capture
     
@@ -103,14 +117,25 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
     style_features = extract_features(style_image, style_layers)
     gen_features = extract_features(generated_image, style_layers)
     
-    loss = 0
+    total_loss = 0
     for i, layer in enumerate(style_layers):
         weight = layer_weights[i]
-        G_style = gram_matrix(style_features[layer])
-        G_gen = gram_matrix(gen_features[layer])
-        loss += weight * F.mse_loss(G_gen, G_style)
+        
+        # Get feature maps for this layer
+        style_feat = style_features[layer]
+        gen_feat = gen_features[layer]
+        
+        # Compute Gram matrices
+        G_style = gram_matrix(style_feat)
+        G_gen = gram_matrix(gen_feat)
+        
+        # Calculate Frobenius norm (squared distance between matrices)
+        # This is the squared distance between the two gram matrices
+        layer_loss = torch.sum((G_gen - G_style) ** 2)
+        
+        total_loss += weight * layer_loss
     
-    return lambda_style * loss
+    return lambda_style * total_loss
 
 # def total_loss(original_image, generated_image, 
 #                lambda_structure=2e-4, lambda_color=1e-4, 
