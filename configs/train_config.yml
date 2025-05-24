@@ -1,5 +1,5 @@
 verbose: True
-num_epochs: 20
+num_epochs: 100
 batch_size: 1
 lr: 1e-3
 channels: 64
@@ -16,4 +16,4 @@ optimizer:
 early_stopping_patience: 10
 
 lambda_content: 1e-3
-lambda_style: 1e-4
+lambda_style: 1e-9
