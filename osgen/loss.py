@@ -53,7 +53,10 @@ def content_loss(original_image, generated_image, lambda_content=1.0):
         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", 
         align_corners=False)
 
-    content_layers = ["21"]  # Use ReLU4_2 layer (high-level features)
+    content_layers = ["21"]  
+    # Use ReLU4_2 layer (high-level features)
+    # 17 -> Use ReLU4_1 instead of ReLU4_2 (less strict)
+    # 12 -> Use ReLU3_4 (even more flexible)
     orig_features = extract_features(original_image, content_layers)
     gen_features = extract_features(generated_image, content_layers)
     
@@ -108,7 +111,7 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
     
     # Default layers if none provided - using lower and mid-level features for style
     if style_layers is None:
-        style_layers = ["0", "5", "10", "19", "28"]  # Including more layers for better style capture
+        style_layers = ["0", "5", "10", "19", "28", "32"]  # Including more layers for better style capture
     
     # Default weights if none provided
     if layer_weights is None:
