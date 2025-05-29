@@ -103,9 +103,11 @@ class PatchesUtilities:
         tissue_mask: np.ndarray,
         patch_size: int = 512,
         patch_tissue_threshold: float = 0.7,
+        min_tissue_threshold: float = 0.1,  # New parameter for boundary patches
         is_visualize: bool = False
     ) -> List[np.ndarray]:
         patch_threshold = int(patch_size * patch_size * patch_tissue_threshold)
+        min_patch_threshold = int(patch_size * patch_size * min_tissue_threshold)  # Lower threshold for boundary patches
         
         # image and tissue mask pre-processing
         h, w, _ = image.shape
@@ -123,11 +125,17 @@ class PatchesUtilities:
         for y in range(0, image_.shape[0], patch_size):
             for x in range(0, image_.shape[1], patch_size):
                 tissue_patch_ = tissue_mask_[y:y + patch_size, x:x + patch_size]
-                if np.sum(tissue_patch_) > patch_threshold:
+                tissue_pixels = np.sum(tissue_patch_)
+                
+                # Accept patches that meet either the high threshold or the minimum threshold
+                if tissue_pixels > patch_threshold or tissue_pixels > min_patch_threshold:
                     patches.append(image_[y:y + patch_size, x:x + patch_size])
                     if is_visualize:
-                        rect = Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor='r', facecolor='none')
+                        # Use different colors to show high vs low tissue content patches
+                        color = 'r' if tissue_pixels > patch_threshold else 'orange'
+                        rect = Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor=color, facecolor='none')
                         ax.add_patch(rect)
+                        
         if is_visualize:
             plt.show()
         return patches
@@ -138,9 +146,11 @@ class PatchesUtilities:
         tissue_mask: np.ndarray, 
         generated_patches: List[np.ndarray],
         patch_size: int = 512,
-        patch_tissue_threshold: float = 0.7
+        patch_tissue_threshold: float = 0.7,
+        min_tissue_threshold: float = 0.1  # Must match the extraction function
     ) -> np.ndarray:
         patch_threshold = int(patch_size * patch_size * patch_tissue_threshold)
+        min_patch_threshold = int(patch_size * patch_size * min_tissue_threshold)
         
         # Same preprocessing as original function
         h, w, _ = original_image.shape
@@ -157,7 +167,10 @@ class PatchesUtilities:
         for y in range(0, image_.shape[0], patch_size):
             for x in range(0, image_.shape[1], patch_size):
                 tissue_patch_ = tissue_mask_[y:y + patch_size, x:x + patch_size]
-                if np.sum(tissue_patch_) > patch_threshold:
+                tissue_pixels = np.sum(tissue_patch_)
+                
+                # Use the same condition as in extraction
+                if tissue_pixels > patch_threshold or tissue_pixels > min_patch_threshold:
                     if patch_idx < len(generated_patches):
                         reconstructed_image[y:y + patch_size, x:x + patch_size] = generated_patches[patch_idx]
                         patch_idx += 1
