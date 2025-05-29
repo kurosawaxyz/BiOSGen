@@ -307,6 +307,13 @@ class VanillaDecoder(VanillaVAE):
             # Final layer: 32x128x128 -> output_channels x 256 x 256
             nn.ConvTranspose2d(256, output_channels, kernel_size=1, stride=1, padding=1),
             nn.Tanh(),  # Output activation to constrain values between -1 and 1
+
+            # Upsample
+            nn.Upsample(
+                size=(512, 512), 
+                mode='bilinear', 
+                align_corners=False
+            )
         )
 
     def forward(self, input: Tensor, grad: bool = True, **kwargs) -> Tensor:
@@ -320,12 +327,12 @@ class VanillaDecoder(VanillaVAE):
         out = self.decoder(input)
         out = (((out - out.min()) / (out.max() - out.min()))*255)
 
-        out = F.interpolate(
-            out, 
-            size=(512, 512), 
-            mode='bilinear', 
-            align_corners=False
-        )
+        # out = F.interpolate(
+        #     out, 
+        #     size=(512, 512), 
+        #     mode='bilinear', 
+        #     align_corners=False
+        # )
 
         return out
 
