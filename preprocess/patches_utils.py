@@ -2,8 +2,8 @@
 # @Author: H. T. Duong Vu
 
 from PIL import Image
-import torch 
-from transformers import AutoModelForCausalLM 
+# import torch 
+# from transformers import AutoModelForCausalLM 
 
 import numpy as np
 from typing import List
@@ -177,6 +177,72 @@ class PatchesUtilities:
         
         # Remove padding to get back to original dimensions
         return reconstructed_image[:h, :w]
+
+    @staticmethod
+    def get_image_patches_full(
+        image: np.ndarray, 
+        patch_size: int = 512,
+        is_visualize: bool = False
+    ) -> List[np.ndarray]:
+        h, w, _ = image.shape
+
+        # Calculate padding only if needed
+        pad_h = (patch_size - h % patch_size) % patch_size
+        pad_w = (patch_size - w % patch_size) % patch_size
+        image_padded = np.pad(image, ((0, pad_h), (0, pad_w), (0, 0)), mode='constant', constant_values=255)
+
+        if is_visualize:
+            fig, ax = plt.subplots()
+            ax.imshow(Image.fromarray(image_padded))
+
+        patches = []
+        for y in range(0, image_padded.shape[0], patch_size):
+            for x in range(0, image_padded.shape[1], patch_size):
+                patch = image_padded[y:y + patch_size, x:x + patch_size]
+                patches.append(patch)
+                
+                if is_visualize:
+                    rect = Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor='green', facecolor='none')
+                    ax.add_patch(rect)
+
+        if is_visualize:
+            plt.title(f"Total patches: {len(patches)}")
+            plt.show()
+
+        return patches
+
+    @staticmethod
+    def replace_patches_in_image_full(
+        original_image: np.ndarray,
+        generated_patches: List[np.ndarray],
+        patch_size: int = 512
+    ) -> np.ndarray:
+        h, w, _ = original_image.shape
+
+        # Compute padding if needed
+        pad_h = (patch_size - h % patch_size) % patch_size
+        pad_w = (patch_size - w % patch_size) % patch_size
+
+        image_padded = np.pad(original_image, ((0, pad_h), (0, pad_w), (0, 0)), mode='constant', constant_values=255)
+
+        # Create a copy to modify
+        reconstructed_image = image_padded.copy()
+
+        # Replace patches in the same order as full-grid extraction
+        patch_idx = 0
+        for y in range(0, image_padded.shape[0], patch_size):
+            for x in range(0, image_padded.shape[1], patch_size):
+                if patch_idx < len(generated_patches):
+                    reconstructed_image[y:y + patch_size, x:x + patch_size] = generated_patches[patch_idx]
+                    patch_idx += 1
+                else:
+                    print("Warning: Not enough patches to fill the image. Some areas remain unchanged.")
+                    break
+
+        # Remove padding to return to original size
+        return reconstructed_image[:h, :w]
+
+
     
     @staticmethod
     def plot_nuclei_labels(
@@ -213,23 +279,23 @@ class PatchesUtilities:
 
 
 
-# moondream
-def load_md(
-    device: str = "cuda"
-) -> AutoModelForCausalLM:
-    """
-    Load the moondream model for image processing.
-    Args:
-        device (str): Device to load the model on. Default is "cuda".
-    Returns:
-        AutoModelForCausalLM: Loaded moondream model.
+# # moondream
+# def load_md(
+#     device: str = "cuda"
+# ) -> AutoModelForCausalLM:
+#     """
+#     Load the moondream model for image processing.
+#     Args:
+#         device (str): Device to load the model on. Default is "cuda".
+#     Returns:
+#         AutoModelForCausalLM: Loaded moondream model.
 
-    Caution: device + type must be same as the one used to train the model.
-    """
-    device = torch.device(device)
-    model = AutoModelForCausalLM.from_pretrained(
-        "vikhyatk/moondream2",
-        revision="2025-01-09",
-        trust_remote_code=True,
-    ).to(device)
-    return model
+#     Caution: device + type must be same as the one used to train the model.
+#     """
+#     device = torch.device(device)
+#     model = AutoModelForCausalLM.from_pretrained(
+#         "vikhyatk/moondream2",
+#         revision="2025-01-09",
+#         trust_remote_code=True,
+#     ).to(device)
+#     return model
