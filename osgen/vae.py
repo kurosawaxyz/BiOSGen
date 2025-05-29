@@ -320,5 +320,12 @@ class VanillaDecoder(VanillaVAE):
         out = self.decoder(input)
         out = (((out - out.min()) / (out.max() - out.min()))*255)
 
+        out = F.interpolate(
+            out, 
+            size=(512, 512), 
+            mode='bilinear', 
+            align_corners=False
+        )
+
         return out
 

@@ -4,6 +4,7 @@
 import torch 
 import torch.nn as nn
 from torchvision.models import resnet50
+from torchvision.models import ResNet50_Weights
 
 from osgen.base import BaseModel
 
@@ -36,7 +37,7 @@ class StyleExtractor(BaseModel):
         self.device = device
 
         # Load ResNet50 up to layer4
-        resnet = resnet50(pretrained=use_pretrained)
+        resnet = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1 if use_pretrained else None)
         self.resnet = nn.Sequential(*list(resnet.children())[:-2])  # output: (B, 2048, H/32, W/32)
 
         # Conv layer to reduce channels
@@ -67,15 +68,3 @@ class StyleExtractor(BaseModel):
         x = self.upsample(x)  # Double the size
         x = self.upsample(x)  # Double the size
 
-        # Flatten and apply fc
-        x = x.view(x.size(0), x.size(1), -1)
-        # print(x.shape)
-        x = x.permute(0, 2, 1)
-        # print(x.shape)
-        x = self.fc_style(x)
-        x = x.permute(0, 2, 1)
-        return x  # structured feature map
-    
-
-class PositionalEmbedding(BaseModel):
-    pass

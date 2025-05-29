@@ -133,6 +133,39 @@ class PatchesUtilities:
         return patches
     
     @staticmethod
+    def replace_patches_in_image(
+        original_image: np.ndarray,
+        tissue_mask: np.ndarray, 
+        generated_patches: List[np.ndarray],
+        patch_size: int = 512,
+        patch_tissue_threshold: float = 0.7
+    ) -> np.ndarray:
+        patch_threshold = int(patch_size * patch_size * patch_tissue_threshold)
+        
+        # Same preprocessing as original function
+        h, w, _ = original_image.shape
+        pad_b = patch_size - h % patch_size
+        pad_r = patch_size - w % patch_size
+        image_ = np.pad(original_image, ((0, pad_b), (0, pad_r), (0, 0)), mode='constant', constant_values=255)
+        tissue_mask_ = np.pad(tissue_mask, ((0, pad_b), (0, pad_r)), mode='constant', constant_values=0)
+        
+        # Create a copy to modify
+        reconstructed_image = image_.copy()
+        
+        # Replace patches in the same order they were extracted
+        patch_idx = 0
+        for y in range(0, image_.shape[0], patch_size):
+            for x in range(0, image_.shape[1], patch_size):
+                tissue_patch_ = tissue_mask_[y:y + patch_size, x:x + patch_size]
+                if np.sum(tissue_patch_) > patch_threshold:
+                    if patch_idx < len(generated_patches):
+                        reconstructed_image[y:y + patch_size, x:x + patch_size] = generated_patches[patch_idx]
+                        patch_idx += 1
+        
+        # Remove padding to get back to original dimensions
+        return reconstructed_image[:h, :w]
+    
+    @staticmethod
     def plot_nuclei_labels(
         image: np.ndarray, 
         bbox_info: np.ndarray = None,
