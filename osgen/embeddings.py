@@ -45,10 +45,10 @@ class StyleExtractor(BaseModel):
 
         self.conv_style = nn.Sequential(
             nn.Conv2d(image_size, embedded_dim, kernel_size=3, padding=1, bias=False),   # keep size
-            nn.BatchNorm2d(embedded_dim),
+            nn.InstanceNorm2d(embedded_dim, affine=True, track_running_stats=False),
             self.activation,
             nn.Conv2d(embedded_dim, embedded_dim, kernel_size=3, padding=1, bias=False),   # keep size
-            nn.BatchNorm2d(embedded_dim),
+            nn.InstanceNorm2d(embedded_dim, affine=True, track_running_stats=False),
             self.activation,
         )
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
