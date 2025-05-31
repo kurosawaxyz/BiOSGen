@@ -43,7 +43,6 @@ class OSGenPipeline(BaseModel):
             image_size: int = 512,
             embedded_dim: int = 64,
             activation: str = 'relu',
-            use_pretrained: bool = True,
 
             # Other parameters
             device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
@@ -85,7 +84,6 @@ class OSGenPipeline(BaseModel):
                     image_size=image_size,
                     embedded_dim=embedded_dim,
                     activation=activation,
-                    use_pretrained=use_pretrained,
                     device=device
                 ).to(device)
         
@@ -104,15 +102,15 @@ class OSGenPipeline(BaseModel):
 
         # Extract style from style tumor
         style_emb = self.style_extractor(dst_tensor)
-        # print(f"Style Embedding Shape: {style_emb.shape}")  # [1, 64, 16384]
-        style_flat = style_emb.to(device='cuda')  # [1, 64, 16384]
-        style = style_flat.view(B, C, H, W)
+        # # print(f"Style Embedding Shape: {style_emb.shape}")  # [1, 64, 16384]
+        # style_flat = style_emb.to(device='cuda')  # [1, 64, 16384]
+        # style = style_flat.view(B, C, H, W)
 
         # Encode
         encoded = self.encoder(src_tensor) 
 
         # Pass through U-Net
-        unet_out = self.unet(encoded, timesteps, style)
+        unet_out = self.unet(encoded, timesteps, style_emb)
 
         # Decode
         decoded = self.decoder(unet_out)

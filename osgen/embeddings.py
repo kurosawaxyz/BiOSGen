@@ -3,8 +3,7 @@
 
 import torch 
 import torch.nn as nn
-from torchvision.models import resnet50
-from torchvision.models import ResNet50_Weights
+import torch.nn.functional as F
 
 from osgen.base import BaseModel
 
@@ -14,68 +13,52 @@ class StyleExtractor(BaseModel):
         image_size: int = 512,
         embedded_dim: int = 64,
         activation: str = 'relu',
-        use_pretrained: bool = True,
         device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
-        **kwargs
-    ) -> None:
+    ):
         super().__init__()
 
-        # Activation
-        if activation == 'relu':
-            self.activation = nn.ReLU()
-        elif activation == 'gelu':
-            self.activation = nn.GELU()
-        elif activation == "sigmoid":
-            self.activation = nn.Sigmoid()
-        elif activation == "silu":
-            self.activation = nn.SiLU()
-        elif activation == "elu":
-            self.activation = nn.ELU()
-        else:
-            raise ValueError(f"Unsupported activation function: {activation}")
+        self.activation = self._get_activation(activation)
 
-        self.device = device
-
-        # Load ResNet50 up to layer4
-        resnet = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1 if use_pretrained else None)
-        self.resnet = nn.Sequential(*list(resnet.children())[:-2])  # output: (B, 2048, H/32, W/32)
-
-        # Conv layer to reduce channels
-        self.conv_reduce = nn.Conv2d(2048, image_size, kernel_size=1, bias=False)  # (B, 512, H/32, W/32)
-
-        self.conv_style = nn.Sequential(
-            nn.Conv2d(image_size, embedded_dim, kernel_size=3, padding=1, bias=False),   # keep size
-            nn.InstanceNorm2d(embedded_dim, affine=True, track_running_stats=False),
+        # Vanilla CNN encoder (no pretrained weights)
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False),  # (B, 64, H/2, W/2)
+            nn.InstanceNorm2d(64, affine=True),
             self.activation,
-            nn.Conv2d(embedded_dim, embedded_dim, kernel_size=3, padding=1, bias=False),   # keep size
-            nn.InstanceNorm2d(embedded_dim, affine=True, track_running_stats=False),
+
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False),  # (B, 128, H/4, W/4)
+            nn.InstanceNorm2d(128, affine=True),
+            self.activation,
+
+            nn.Conv2d(128, embedded_dim, kernel_size=3, stride=1, padding=1, bias=False),  # (B, embedded_dim, H/4, W/4)
+            nn.InstanceNorm2d(embedded_dim, affine=True),
             self.activation,
         )
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
 
-        self.fc_style = nn.Sequential(
-            nn.Linear(embedded_dim, embedded_dim),
-            self.activation,
-            nn.Linear(embedded_dim, embedded_dim),
-        )
+        # # Projection head per spatial location
+        # self.fc_style = nn.Sequential(
+        #     nn.Linear(embedded_dim, embedded_dim),
+        #     self.activation,
+        #     nn.Linear(embedded_dim, embedded_dim),
+        # )
 
+    def _get_activation(self, name):
+        return {
+            "relu": nn.ReLU(),
+            "gelu": nn.GELU(),
+            "sigmoid": nn.Sigmoid(),
+            "silu": nn.SiLU(),
+            "elu": nn.ELU()
+        }.get(name.lower(), nn.ReLU())
 
     def forward(self, image):
-        x = self.resnet(image)       # (B, 2048, H/32, W/32)
-        x = self.conv_reduce(x)      # (B, 512, H/32, W/32)
-        x = self.conv_style(x)       # (B, embedded_dim, H/32, W/32)
-        x = self.upsample(x)  # Double the size
-        x = self.upsample(x)  # Double the size
-        x = self.upsample(x)  # Double the size
+        B = image.size(0)
+        x = self.encoder(image)         # (B, embedded_dim, H/4, W/4)
+        # x = x.view(B, x.size(1), -1)    # (B, C, N)
+        # x = x.permute(0, 2, 1)          # (B, N, C)
+        # x = self.fc_style(x)            # (B, N, C)
+        # x = x.permute(0, 2, 1)          # (B, C, N)
+        return x
 
-        # Flatten and apply fc
-        x = x.view(x.size(0), x.size(1), -1)
-        # print(x.shape)
-        x = x.permute(0, 2, 1)
-        # print(x.shape)
-        x = self.fc_style(x)
-        x = x.permute(0, 2, 1)
-        return x  # structured feature map
     
 
 class PositionalEmbedding(BaseModel):
