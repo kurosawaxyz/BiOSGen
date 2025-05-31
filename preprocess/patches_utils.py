@@ -2,17 +2,15 @@
 # @Author: H. T. Duong Vu
 
 from PIL import Image
-# import torch 
-# from transformers import AutoModelForCausalLM 
-
 import numpy as np
-from typing import List
+from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
 from matplotlib.patches import Rectangle
 import subprocess
 import os
+from collections import defaultdict
 
 from .tissue_mask import GaussianTissueMask
 
@@ -265,37 +263,160 @@ class PatchesUtilities:
         if save_fpath is not None:
             plt.savefig(save_fpath, dpi=600)
 
+
     @staticmethod
-    def describe_img(
-        image_path: str,
-        device: str = "cuda"
-    ) -> str:
-        img = Image.open(image_path)
-        model = load_md(device)
-        enc_image = model.encode_image(img)
-        desc = model.query(enc_image, "Describe this image.\n")
-        print("Description: ", desc)
-        return desc
+    def get_full_info(
+            image: np.ndarray, 
+            tissue_mask: np.ndarray,
+            bbox_info: np.ndarray = None,
+            patch_size: int = 512,
+            patch_tissue_threshold: float = 0.7,
+            min_tissue_threshold: float = 0.1,
+        ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        
+        patch_threshold = int(patch_size * patch_size * patch_tissue_threshold)
+        min_patch_threshold = int(patch_size * patch_size * min_tissue_threshold)
 
+        # Image and tissue mask pre-processing
+        h, w, _ = image.shape
+        pad_b = patch_size - h % patch_size if h % patch_size != 0 else 0
+        pad_r = patch_size - w % patch_size if w % patch_size != 0 else 0
+        
+        image_ = np.pad(image, ((0, pad_b), (0, pad_r), (0, 0)), mode='constant', constant_values=255)
+        tissuemask = np.pad(tissue_mask, ((0, pad_b), (0, pad_r)), mode='constant', constant_values=0)
 
+        patches = []
+        bbox_patches = []
 
-# # moondream
-# def load_md(
-#     device: str = "cuda"
-# ) -> AutoModelForCausalLM:
-#     """
-#     Load the moondream model for image processing.
-#     Args:
-#         device (str): Device to load the model on. Default is "cuda".
-#     Returns:
-#         AutoModelForCausalLM: Loaded moondream model.
+        def _extract_patches_simple(image_, tissuemask, patch_size, patch_threshold, min_patch_threshold):
+            """Extract patches without bbox optimization"""
+            patches_data = []
+            
+            for y in range(0, image_.shape[0], patch_size):
+                for x in range(0, image_.shape[1], patch_size):
+                    tissuepatch = tissuemask[y:y + patch_size, x:x + patch_size]
+                    tissue_pixels = np.sum(tissuepatch)
+                    
+                    if tissue_pixels > patch_threshold or tissue_pixels > min_patch_threshold:
+                        patches_data.append({
+                            'coords': (y, x),
+                            'bboxes': np.array([])
+                        })
+            
+            return patches_data
 
-#     Caution: device + type must be same as the one used to train the model.
-#     """
-#     device = torch.device(device)
-#     model = AutoModelForCausalLM.from_pretrained(
-#         "vikhyatk/moondream2",
-#         revision="2025-01-09",
-#         trust_remote_code=True,
-#     ).to(device)
-#     return model
+        def _extract_patches_with_bbox_optimization(image_, tissuemask, bbox_info, patch_size, 
+                                                patch_threshold, min_patch_threshold):
+            """Optimized patch extraction with bbox spatial indexing"""
+            
+            # Create spatial index for bounding boxes
+            bbox_grid = defaultdict(list)
+            
+            for i, bbox in enumerate(bbox_info):
+                y0, x0, y1, x1 = bbox[:4]  # Only take first 4 coordinates
+                
+                # Find which patch grid cells this bbox overlaps with
+                start_patch_y = int(y0 // patch_size)
+                end_patch_y = int(y1 // patch_size)
+                start_patch_x = int(x0 // patch_size)  
+                end_patch_x = int(x1 // patch_size)
+                
+                # Add bbox to all overlapping patches
+                for patch_y in range(start_patch_y, end_patch_y + 1):
+                    for patch_x in range(start_patch_x, end_patch_x + 1):
+                        bbox_grid[(patch_y, patch_x)].append(i)
+            
+            patches_data = []
+            
+            # Extract patches and their corresponding bboxes
+            for y in range(0, image_.shape[0], patch_size):
+                for x in range(0, image_.shape[1], patch_size):
+                    tissuepatch = tissuemask[y:y + patch_size, x:x + patch_size]
+                    tissue_pixels = np.sum(tissuepatch)
+                    
+                    if tissue_pixels > patch_threshold or tissue_pixels > min_patch_threshold:
+                        patch_y_idx = y // patch_size
+                        patch_x_idx = x // patch_size
+                        
+                        # Get candidate bboxes for this patch
+                        candidate_bbox_indices = bbox_grid.get((patch_y_idx, patch_x_idx), [])
+                        
+                        # Filter bboxes that actually overlap with this patch
+                        overlapping_bboxes = []
+                        patch_x1, patch_y1 = x + patch_size, y + patch_size
+                        
+                        for bbox_idx in candidate_bbox_indices:
+                            bbox = bbox_info[bbox_idx]
+                            y0, x0, y1, x1 = bbox[:4]
+                            
+                            # Check if bbox overlaps with patch (more lenient condition)
+                            if not (x1 <= x or x0 >= patch_x1 or y1 <= y or y0 >= patch_y1):
+                                # Adjust bbox coordinates to be relative to patch
+                                rel_y0 = max(0, y0 - y)
+                                rel_x0 = max(0, x0 - x)  
+                                rel_y1 = min(patch_size, y1 - y)
+                                rel_x1 = min(patch_size, x1 - x)
+                                
+                                # Create new bbox with relative coordinates
+                                relative_bbox = bbox.copy()
+                                relative_bbox[0] = rel_y0
+                                relative_bbox[1] = rel_x0
+                                relative_bbox[2] = rel_y1
+                                relative_bbox[3] = rel_x1
+                                
+                                overlapping_bboxes.append(relative_bbox)
+                        
+                        patches_data.append({
+                            'coords': (y, x),
+                            'bboxes': np.array(overlapping_bboxes) if overlapping_bboxes else np.array([]).reshape(0, bbox_info.shape[1])
+                        })
+            
+            return patches_data
+        
+        # Pre-compute patch grid if we have bounding boxes
+        if bbox_info is not None and len(bbox_info) > 0:
+            bbox_patches = _extract_patches_with_bbox_optimization(
+                image_, tissuemask, bbox_info, patch_size, 
+                patch_threshold, min_patch_threshold
+            )
+        else:
+            bbox_patches = _extract_patches_simple(
+                image_, tissuemask, patch_size, 
+                patch_threshold, min_patch_threshold
+            )
+        
+        # Extract image patches and corresponding bboxes
+        for patch_data in bbox_patches:
+            y, x = patch_data['coords']
+            patches.append(image_[y:y + patch_size, x:x + patch_size])
+        
+        # Return bboxes in the same order as patches
+        bboxes = [patch_data['bboxes'] for patch_data in bbox_patches]
+        
+        return patches, bboxes
+
+    # Optional: Helper function to visualize patches with bboxes
+    @staticmethod
+    def visualize_patch_with_bboxes(patch, bboxes, patch_idx=0):
+        """Visualize a patch with its bounding boxes"""
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as patches_viz
+        
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        ax.imshow(patch)
+        
+        colors = {
+                0 : 'r',    # NEG nuclei
+                1 : 'b'     # POS nuclei
+            }
+        
+        for i, bbox in enumerate(bboxes):
+            if len(bbox) >= 4:
+                y0, x0, y1, x1, label = bbox
+                rect = patches_viz.Rectangle((x0, y0), x1-x0, y1-y0, 
+                                        linewidth=2, edgecolor=colors[label], 
+                                        facecolor='none')
+                ax.add_patch(rect)
+        
+        ax.set_title(f'Patch {patch_idx} with {len(bboxes)} bounding boxes')
+        plt.show()

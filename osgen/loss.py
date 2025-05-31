@@ -140,33 +140,46 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
     
     return lambda_style * total_loss
 
-# def total_loss(original_image, generated_image, 
-#                lambda_structure=2e-4, lambda_color=1e-4, 
-#                lambda_content=1e-3, lambda_style=1e-8, verbose=False):
-#     """
-#     Compute the total loss - simplified version
-#     """
-#     if original_image.shape != generated_image.shape:
-#         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
 
-#     # Calculate individual losses with proper error handling
-#     structure_loss_val = structure_preservation_loss(original_image, generated_image, lambda_structure)
-#     # color_loss_val = color_alignment_loss(original_image, generated_image, bins=64, lambda_color=lambda_color)
-#     content_loss_val = content_loss(original_image, generated_image, lambda_content)
-#     style_loss_val = style_loss(original_image, generated_image, lambda_style)
-    
-#     # Replace NaN or Inf values with zeros
-#     structure_loss_val = torch.nan_to_num(structure_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-#     color_loss_val = torch.nan_to_num(color_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-#     content_loss_val = torch.nan_to_num(content_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-#     style_loss_val = torch.nan_to_num(style_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-    
-#     if verbose:
-#         print(f"Structure Loss: {structure_loss_val.item():.6f}")
-#         print(f"Color Loss: {color_loss_val.item():.6f}")
-#         print(f"Content Loss: {content_loss_val.item():.6f}")
-#         print(f"Style Loss: {style_loss_val.item():.6f}")
+def compute_roi_style_loss(x_gen: torch.Tensor, 
+                           x_orig: torch.Tensor, 
+                           bbox_info: torch.Tensor, 
+                           patch_size: int = 512,
+                           class_weights: dict = None) -> torch.Tensor:
+    """
+    Compute an ROI-aware style loss between generated and original patches.
 
-#     # Sum all losses
-#     total = structure_loss_val + color_loss_val + content_loss_val + style_loss_val
-#     return total
+    Args:
+        x_gen (Tensor): Generated image patch. Shape: [1, C, H, W]
+        x_orig (Tensor): Original image patch. Shape: [1, C, H, W]
+        bbox_info (Tensor): Bounding box info (tensor of [y0, x0, y1, x1, label])
+        patch_size (int): Size of the patch. Default: 512
+        class_weights (dict): Optional class weighting. Example: {0: 1.0, 1: 2.0}
+
+    Returns:
+        Tensor: Scalar loss value (style-aware L1 loss in tumor ROI)
+    """
+
+    # Ensure input shape
+    assert x_gen.shape == x_orig.shape, "Generated and original images must be same shape"
+    assert x_gen.shape[2] == patch_size and x_gen.shape[3] == patch_size, "Patch size mismatch"
+
+    device = x_gen.device
+    mask = torch.zeros(1, 1, patch_size, patch_size, device=device)
+
+    # Generate ROI mask
+    for box in bbox_info:
+        y0, x0, y1, x1, label = map(int, box.tolist())
+
+        weight = 1.0
+        if class_weights is not None:
+            weight = class_weights.get(label, 1.0)
+        
+        mask[:, :, y0:y1, x0:x1] = weight
+
+    # Compute masked L1 loss
+    l1 = torch.abs(x_gen - x_orig)
+    masked_l1 = l1 * mask  # Focus only inside ROI
+    loss = masked_l1.sum() / mask.sum().clamp(min=1.0)  # Normalize by area
+
+    return loss
