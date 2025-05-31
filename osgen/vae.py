@@ -37,7 +37,7 @@ class VanillaVAE(BaseModel):
                 nn.Sequential(
                     nn.Conv2d(in_channels, out_channels=h_dim,
                             kernel_size=3, stride=2, padding=1),
-                    nn.BatchNorm2d(h_dim),
+                    nn.InstanceNorm2d(h_dim, affine=True, track_running_stats=False),
                     nn.LeakyReLU())
             )
             in_channels = h_dim
@@ -80,7 +80,7 @@ class VanillaVAE(BaseModel):
                                        stride = 2,
                                        padding=1,
                                        output_padding=1),
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
+                    nn.InstanceNorm2d(hidden_dims[i + 1], affine=True, track_running_stats=False),
                     nn.LeakyReLU())
             )
 
@@ -95,7 +95,7 @@ class VanillaVAE(BaseModel):
                                             stride=2,
                                             padding=1,
                                             output_padding=1),
-                            nn.BatchNorm2d(hidden_dims[-1]),
+                            nn.InstanceNorm2d(hidden_dims[-1], affine=True, track_running_stats=False),
                             nn.LeakyReLU(),
                             nn.Conv2d(hidden_dims[-1], out_channels= 3,
                                     kernel_size= 3, padding= 1),
@@ -291,17 +291,17 @@ class VanillaDecoder(VanillaVAE):
         self.decoder = nn.Sequential(
             # Layer 1: 64x64x64 -> 128x32x32
             nn.ConvTranspose2d(latent_dim, 1024, kernel_size=1, stride=1, padding=1),
-            nn.BatchNorm2d(1024),
+            nn.InstanceNorm2d(1024, affine=True, track_running_stats=False),
             nn.ReLU(inplace=True),
             
             # Layer 2: 128x32x32 -> 64x64x64
             nn.ConvTranspose2d(1024, 256, kernel_size=1, stride=1, padding=2),
-            nn.BatchNorm2d(256),
+            nn.InstanceNorm2d(256, affine=True, track_running_stats=False),
             nn.ReLU(inplace=True),
-            
+
             # # Layer 3: 64x64x64 -> 32x128x128
             # nn.ConvTranspose2d(512, 64, kernel_size=1, stride=1, padding=1),
-            # nn.BatchNorm2d(64),
+            # nn.InstanceNorm2d(64, affine=True, track_running_stats=False),
             # nn.ReLU(inplace=True),
             
             # Final layer: 32x128x128 -> output_channels x 256 x 256

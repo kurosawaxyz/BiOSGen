@@ -114,14 +114,14 @@ class Utilities:
     def convert_module_to_bf16(module):
         """
         Convert primitive modules to bfloat16.
-        Supports Conv, Linear, BatchNorm, LayerNorm and other common layers.
+        Supports Conv, Linear, InstanceNorm, LayerNorm and other common layers.
         """
         if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)):
             module.weight.data = module.weight.data.to(torch.bfloat16)
             if module.bias is not None:
                 module.bias.data = module.bias.data.to(torch.bfloat16)
         
-        elif isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d, 
+        elif isinstance(module, (nn.InstanceNorm1d, nn.InstanceNorm2d, nn.InstanceNorm3d, 
                             nn.LayerNorm, nn.GroupNorm, nn.InstanceNorm1d, 
                             nn.InstanceNorm2d, nn.InstanceNorm3d)):
             if module.weight is not None:
