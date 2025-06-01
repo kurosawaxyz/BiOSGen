@@ -120,7 +120,7 @@ class OSGenPipeline(BaseModel):
         return decoded
     
     # Compute loss
-    def compute_loss(self, src_tensor: torch.Tensor, dst_tensor: torch.Tensor, generated_image: torch.Tensor, lambda_content: torch.float = 0.001, lambda_style: torch.float = 0.0001) -> torch.Tensor:
+    def compute_loss(self, src_tensor: torch.Tensor, dst_tensor: torch.Tensor, generated_image: torch.Tensor, lambda_content: torch.float = 1e-3, lambda_style: torch.float = 1e-2) -> torch.Tensor:
         """
         Compute the loss for the pipeline.
         Args:
