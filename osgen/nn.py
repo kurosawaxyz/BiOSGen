@@ -104,18 +104,6 @@ class SpatialAdaIN(BaseModel):
             s_mean, s_std = style_feat.mean([2, 3], keepdim=True), style_feat.std([2, 3], keepdim=True) + eps
             return s_std * (content_feat - c_mean) / c_std + s_mean
         
-        # # Instance normalization on content (without affine parameters)
-        # content_mean = content.mean(dim=(2, 3), keepdim=True)
-        # content_var = content.var(dim=(2, 3), keepdim=True) + self.eps
-        # content_normalized = (content - content_mean) / torch.sqrt(content_var)
-        
-        # # Extract style statistics with improved stability
-        # style_mean = style_features.mean(dim=(2, 3), keepdim=True)
-        # style_var = style_features.var(dim=(2, 3), keepdim=True) + self.eps
-        # style_std = torch.sqrt(style_var)
-        
-        # Apply style
-        # return style_std * content_normalized + style_mean
         return adain(content, style_features, self.eps)
     
     
