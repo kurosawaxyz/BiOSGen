@@ -103,10 +103,10 @@ class OSGenPipeline(BaseModel):
         B, C, H, W = 1, 64, 128, 128
 
         # Extract style from style tumor
-        style_emb = self.style_extractor(dst_tensor)
-        # print(f"Style Embedding Shape: {style_emb.shape}")  # [1, 64, 16384]
-        style_flat = style_emb.to(device='cuda')  # [1, 64, 16384]
-        style = style_flat.view(B, C, H, W)
+        style = self.style_extractor(dst_tensor)
+        # # print(f"Style Embedding Shape: {style_emb.shape}")  # [1, 64, 16384]
+        # style_flat = style_emb.to(device='cuda')  # [1, 64, 16384]
+        # style = style_flat.view(B, C, H, W)
 
         # Encode
         encoded = self.encoder(src_tensor) 

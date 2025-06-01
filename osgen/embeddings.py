@@ -3,8 +3,9 @@
 
 import torch 
 import torch.nn as nn
-from torchvision.models import resnet50
-from torchvision.models import ResNet50_Weights
+import torch.nn.functional as F
+from torchvision.models import ResNet50_Weights, vgg19, resnet50, VGG19_Weights
+from torchvision.models.feature_extraction import create_feature_extractor
 
 from osgen.base import BaseModel
 
@@ -20,62 +21,71 @@ class StyleExtractor(BaseModel):
     ) -> None:
         super().__init__()
 
-        # Activation
-        if activation == 'relu':
-            self.activation = nn.ReLU()
-        elif activation == 'gelu':
-            self.activation = nn.GELU()
-        elif activation == "sigmoid":
-            self.activation = nn.Sigmoid()
-        elif activation == "silu":
-            self.activation = nn.SiLU()
-        elif activation == "elu":
-            self.activation = nn.ELU()
-        else:
-            raise ValueError(f"Unsupported activation function: {activation}")
+        # Activation function
+        self.activation = getattr(nn, activation.upper())() if hasattr(nn, activation.upper()) else nn.ReLU()
 
         self.device = device
 
-        # Load ResNet50 up to layer4
+        # ResNet50 up to layer4
         resnet = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1 if use_pretrained else None)
-        self.resnet = nn.Sequential(*list(resnet.children())[:-2])  # output: (B, 2048, H/32, W/32)
+        self.resnet = nn.Sequential(*list(resnet.children())[:-2])  # (B, 2048, H/32, W/32)
 
-        # Conv layer to reduce channels
-        self.conv_reduce = nn.Conv2d(2048, image_size, kernel_size=1, bias=False)  # (B, 512, H/32, W/32)
+        # VGG19 partial
+        vgg = vgg19(weights=VGG19_Weights.IMAGENET1K_V1 if use_pretrained else None)
+        self.vgg = create_feature_extractor(
+            vgg.features,
+            return_nodes={
+                '4': 'relu1_1',
+                '9': 'relu2_1',
+                '18': 'relu3_1'
+            }
+        )
 
-        self.conv_style = nn.Sequential(
-            nn.Conv2d(image_size, embedded_dim, kernel_size=3, padding=1, bias=False),   # keep size
-            nn.InstanceNorm2d(embedded_dim, affine=True, track_running_stats=False),
-            self.activation,
-            nn.Conv2d(embedded_dim, embedded_dim, kernel_size=3, padding=1, bias=False),   # keep size
-            nn.InstanceNorm2d(embedded_dim, affine=True, track_running_stats=False),
+        for param in self.vgg.parameters():
+            param.requires_grad = False
+
+        # Downsample VGG output to match ResNet size
+        self.vgg_reduce = nn.Sequential(
+            nn.Conv2d(256, image_size, kernel_size=1, bias=False),  # assuming relu3_1 gives 256 channels
+            nn.InstanceNorm2d(image_size),
             self.activation,
         )
+
+        # Reduce ResNet channel dimension
+        self.resnet_reduce = nn.Conv2d(2048, image_size, kernel_size=1, bias=False)
+
+        # Combine both and encode to style
+        self.conv_style = nn.Sequential(
+            nn.Conv2d(image_size * 2, embedded_dim, kernel_size=3, padding=1, bias=False),
+            nn.InstanceNorm2d(embedded_dim),
+            self.activation,
+            nn.Conv2d(embedded_dim, embedded_dim, kernel_size=3, padding=1, bias=False),
+            nn.InstanceNorm2d(embedded_dim),
+            self.activation,
+        )
+
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
 
-        self.fc_style = nn.Sequential(
-            nn.Linear(embedded_dim, embedded_dim),
-            self.activation,
-            nn.Linear(embedded_dim, embedded_dim),
-        )
-
-
     def forward(self, image):
-        x = self.resnet(image)       # (B, 2048, H/32, W/32)
-        x = self.conv_reduce(x)      # (B, 512, H/32, W/32)
-        x = self.conv_style(x)       # (B, embedded_dim, H/32, W/32)
-        x = self.upsample(x)  # Double the size
-        x = self.upsample(x)  # Double the size
-        x = self.upsample(x)  # Double the size
+        # ResNet path
+        x_r = self.resnet(image)              # (B, 2048, H/32, W/32)
+        x_r = self.resnet_reduce(x_r)         # (B, image_size, H/32, W/32)
 
-        # Flatten and apply fc
-        x = x.view(x.size(0), x.size(1), -1)
-        # print(x.shape)
-        x = x.permute(0, 2, 1)
-        # print(x.shape)
-        x = self.fc_style(x)
-        x = x.permute(0, 2, 1)
-        return x  # structured feature map
+        # VGG path
+        vgg_feats = self.vgg(image)
+        x_v = vgg_feats['relu3_1']            # (B, 256, H/8, W/8)
+        x_v = F.adaptive_avg_pool2d(x_v, x_r.shape[-2:])  # Downsample to H/32
+        x_v = self.vgg_reduce(x_v)            # (B, image_size, H/32, W/32)
+
+        # Fuse
+        x = torch.cat([x_r, x_v], dim=1)      # (B, image_size*2, H/32, W/32)
+        x = self.conv_style(x)                # (B, embedded_dim, H/32, W/32)
+
+        # Upsample to match original input
+        x = self.upsample(self.upsample(self.upsample(x)))  # → H, W
+
+        return x  # (B, embedded_dim, H, W)
+
     
 
 class PositionalEmbedding(BaseModel):
