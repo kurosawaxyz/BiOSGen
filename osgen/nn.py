@@ -55,6 +55,8 @@ class TimestepEmbedSequential(nn.Sequential):
         for layer in self:
             if isinstance(layer, StyledResBlock):
                 x = layer(x, emb, style)
+            elif isinstance(layer, ResBlock):
+                x = layer(x, emb)
             elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
                 x = layer(x, emb)
             else:
@@ -254,7 +256,7 @@ class Downsample(BaseModel):
         return self.op(x)
     
 
-class ResBlock(BaseModel):
+class ResBlock(TimestepEmbedSequential):
     """Simplified ResBlock without style conditioning."""
     def __init__(
         self,
@@ -380,7 +382,7 @@ class ResBlock(BaseModel):
         return skip + h
 
 
-class StyledResBlock(BaseModel):
+class StyledResBlock(TimestepEmbedSequential):
     """ResBlock with AdaIN before and after."""
     def __init__(
         self,
