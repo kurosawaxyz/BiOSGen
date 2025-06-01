@@ -55,6 +55,8 @@ class TimestepEmbedSequential(nn.Sequential):
         for layer in self:
             if isinstance(layer, StyledResBlock):
                 x = layer(x, emb, style)
+            elif isinstance(layer, ResBlock):
+                x = layer(x, emb)
             elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
                 x = layer(x, emb)
             else:
@@ -70,7 +72,7 @@ class SpatialAdaIN(BaseModel):
         self.channel_reducer = None
         
     def forward(self, content, style):
-        
+
         # Resize style spatially to match content
         spatial_resized = F.interpolate(
             style, 
@@ -94,19 +96,15 @@ class SpatialAdaIN(BaseModel):
             style_features = self.channel_reducer(spatial_resized)
         else:
             style_features = spatial_resized
+
+
+        # Perform AdaIN
+        def adain(content_feat, style_feat, eps=1e-5):
+            c_mean, c_std = content_feat.mean([2, 3], keepdim=True), content_feat.std([2, 3], keepdim=True) + eps
+            s_mean, s_std = style_feat.mean([2, 3], keepdim=True), style_feat.std([2, 3], keepdim=True) + eps
+            return s_std * (content_feat - c_mean) / c_std + s_mean
         
-        # Instance normalization on content (without affine parameters)
-        content_mean = content.mean(dim=(2, 3), keepdim=True)
-        content_var = content.var(dim=(2, 3), keepdim=True) + self.eps
-        content_normalized = (content - content_mean) / torch.sqrt(content_var)
-        
-        # Extract style statistics with improved stability
-        style_mean = style_features.mean(dim=(2, 3), keepdim=True)
-        style_var = style_features.var(dim=(2, 3), keepdim=True) + self.eps
-        style_std = torch.sqrt(style_var)
-        
-        # Apply style
-        return style_std * content_normalized + style_mean
+        return adain(content, style_features, self.eps)
     
     
 # Class: Attention
@@ -246,7 +244,7 @@ class Downsample(BaseModel):
         return self.op(x)
     
 
-class ResBlock(BaseModel):
+class ResBlock(TimestepEmbedSequential):
     """Simplified ResBlock without style conditioning."""
     def __init__(
         self,
@@ -372,7 +370,7 @@ class ResBlock(BaseModel):
         return skip + h
 
 
-class StyledResBlock(BaseModel):
+class StyledResBlock(TimestepEmbedSequential):
     """ResBlock with AdaIN before and after."""
     def __init__(
         self,

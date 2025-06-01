@@ -179,10 +179,7 @@ class AdaINUNet(BaseModel):
         
         # Handle None style
         if style is None:
-            # Create an empty tensor with the same batch size as x
-            batch_size = x.shape[0]
-            # Use a small channel dimension that will be properly handled by StyledResBlock
-            style = torch.zeros(batch_size, 1, 1, 1, device=x.device, dtype=x.dtype)
+            raise ValueError("Style tensor must be provided for AdaINUNet.")
         
         # Initial processing
         h = x
