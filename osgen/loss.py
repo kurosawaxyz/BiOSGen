@@ -140,33 +140,7 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
     
     return lambda_style * total_loss
 
-# def total_loss(original_image, generated_image, 
-#                lambda_structure=2e-4, lambda_color=1e-4, 
-#                lambda_content=1e-3, lambda_style=1e-8, verbose=False):
-#     """
-#     Compute the total loss - simplified version
-#     """
-#     if original_image.shape != generated_image.shape:
-#         generated_image = F.interpolate(generated_image, size=original_image.shape[2:], mode="bilinear", align_corners=False)
-
-#     # Calculate individual losses with proper error handling
-#     structure_loss_val = structure_preservation_loss(original_image, generated_image, lambda_structure)
-#     # color_loss_val = color_alignment_loss(original_image, generated_image, bins=64, lambda_color=lambda_color)
-#     content_loss_val = content_loss(original_image, generated_image, lambda_content)
-#     style_loss_val = style_loss(original_image, generated_image, lambda_style)
-    
-#     # Replace NaN or Inf values with zeros
-#     structure_loss_val = torch.nan_to_num(structure_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-#     color_loss_val = torch.nan_to_num(color_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-#     content_loss_val = torch.nan_to_num(content_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-#     style_loss_val = torch.nan_to_num(style_loss_val, nan=0.0, posinf=0.0, neginf=0.0)
-    
-#     if verbose:
-#         print(f"Structure Loss: {structure_loss_val.item():.6f}")
-#         print(f"Color Loss: {color_loss_val.item():.6f}")
-#         print(f"Content Loss: {content_loss_val.item():.6f}")
-#         print(f"Style Loss: {style_loss_val.item():.6f}")
-
-#     # Sum all losses
-#     total = structure_loss_val + color_loss_val + content_loss_val + style_loss_val
-#     return total
+def total_variation_loss(img, weight=1.0):
+    loss = torch.sum(torch.abs(img[:, :, :, :-1] - img[:, :, :, 1:])) + \
+           torch.sum(torch.abs(img[:, :, :-1, :] - img[:, :, 1:, :]))
+    return weight * loss

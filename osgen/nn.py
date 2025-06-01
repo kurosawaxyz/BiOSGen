@@ -95,18 +95,12 @@ class SpatialAdaIN(BaseModel):
         else:
             style_features = spatial_resized
         
-        # Instance normalization on content (without affine parameters)
-        content_mean = content.mean(dim=(2, 3), keepdim=True)
-        content_var = content.var(dim=(2, 3), keepdim=True) + self.eps
-        content_normalized = (content - content_mean) / torch.sqrt(content_var)
-        
-        # Extract style statistics with improved stability
-        style_mean = style_features.mean(dim=(2, 3), keepdim=True)
-        style_var = style_features.var(dim=(2, 3), keepdim=True) + self.eps
-        style_std = torch.sqrt(style_var)
-        
-        # Apply style
-        return style_std * content_normalized + style_mean
+        # Apply AdaIN
+        def adain(content_feat, style_feat, eps=1e-5):
+            c_mean, c_std = content_feat.mean([2, 3], keepdim=True), content_feat.std([2, 3], keepdim=True) + eps
+            s_mean, s_std = style_feat.mean([2, 3], keepdim=True), style_feat.std([2, 3], keepdim=True) + eps
+            return s_std * (content_feat - c_mean) / c_std + s_mean
+        return adain(content, style_features, self.eps)
     
     
 # Class: Attention
