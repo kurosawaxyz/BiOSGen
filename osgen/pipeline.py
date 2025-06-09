@@ -100,7 +100,8 @@ class OSGenPipeline(BaseModel):
         Returns:
             torch.Tensor: Output tensor.
         """
-        B, C, H, W = 1, 64, 128, 128
+        B = src_tensor.shape[0]  # Batch size
+        C, H, W = 64, 128, 128
 
         # Extract style from style tumor
         style_emb = self.style_extractor(dst_tensor)
@@ -143,7 +144,7 @@ class OSGenPipeline(BaseModel):
                     lambda_style=1.0  # Using 1.0 here since we're scaling outside
                 )
         # Total variation loss
-        tv_l = lambda_tv * total_variation_loss(generated_image)
+        # tv_l = lambda_tv * total_variation_loss(generated_image)
         
         total_loss = content_l + style_l
-        return content_l, style_l, tv_l, total_loss
+        return content_l, style_l, total_loss   # , tv_l

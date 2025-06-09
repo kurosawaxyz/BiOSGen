@@ -43,21 +43,7 @@ class VanillaVAE(BaseModel):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        # Convolution to reduce to latent channels (with LoRA)
-        # self.conv_mu = nn.Conv2d(
-        #     in_channels=in_channels, 
-        #     out_channels=latent_dim, 
-        #     kernel_size=1, 
-        #     stride=1, 
-        #     padding=0,
-        # )
-        # self.conv_logvar = nn.Conv2d(
-        #     in_channels=in_channels, 
-        #     out_channels=latent_dim, 
-        #     kernel_size=1, 
-        #     stride=1, 
-        #     padding=0,
-        #     )
+        
         self.fc_mu = nn.Linear(hidden_dims[-1], latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1], latent_dim)
 
