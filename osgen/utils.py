@@ -14,6 +14,35 @@ class Utilities:
         pass
 
     @staticmethod
+    def convert_numpy_batch_to_tensor(batch, device='cuda'):
+        # Convert each image to float32 tensor and permute to [C, H, W]
+        tensor_batch = [torch.tensor(img, dtype=torch.float32).permute(2, 0, 1) if img.ndim == 3 else torch.tensor(img, dtype=torch.float32) for img in batch]
+
+        # Stack into a single batch tensor: [B, C, H, W]
+        batch_tensor = torch.stack(tensor_batch, dim=0).to(device)
+
+        return batch_tensor
+
+    @staticmethod
+    def train_test_split_indices(dataset, train_ratio: float = 0.8):
+        """
+        Split dataset indices into training and testing sets.
+
+        Args:
+            dataset: The dataset to split (only length is used).
+            train_ratio: The proportion of the dataset to include in the training set.
+
+        Returns:
+            A tuple of (train_indices, test_indices).
+        """
+        n = len(dataset)
+        indices = torch.randperm(n).tolist()
+        n_train = int(n * train_ratio)
+        train_indices = indices[:n_train]
+        test_indices = indices[n_train:]
+        return train_indices, test_indices
+
+    @staticmethod
     def load_model(model, path: str) -> None:
         """
         Load a model from a specified path.

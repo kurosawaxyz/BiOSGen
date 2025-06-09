@@ -55,8 +55,11 @@ class TimestepEmbedSequential(nn.Sequential):
         for layer in self:
             if isinstance(layer, StyledResBlock):
                 x = layer(x, emb, style)
-            elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
+            # Add forward method for ResBlock
+            elif isinstance(layer, ResBlock):
                 x = layer(x, emb)
+            # elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
+            #     x = layer(x, emb)
             else:
                 x = layer(x)
         return x
@@ -67,7 +70,14 @@ class SpatialAdaIN(BaseModel):
         super().__init__()
         self.channels = channels
         self.eps = eps
-        self.channel_reducer = None
+        self.channel_reducer = nn.Conv2d(
+            in_channels=64,
+            out_channels=channels,
+            kernel_size=1,
+            bias=False
+        )
+        for param in self.channel_reducer.parameters():
+            param.requires_grad = False
         
     def forward(self, content, style):
         
@@ -80,17 +90,7 @@ class SpatialAdaIN(BaseModel):
         )
         
         # Match channels if needed
-        if spatial_resized.shape[1] != content.shape[1]:
-            if (self.channel_reducer is None or 
-                self.channel_reducer.in_channels != spatial_resized.shape[1] or
-                self.channel_reducer.out_channels != content.shape[1]):
-                
-                self.channel_reducer = nn.Conv2d(
-                    spatial_resized.shape[1], 
-                    content.shape[1], 
-                    kernel_size=1
-                ).to(content.device)
-                
+        if spatial_resized.shape[1] != content.shape[1]: 
             style_features = self.channel_reducer(spatial_resized)
         else:
             style_features = spatial_resized
