@@ -24,6 +24,7 @@ class AdaINUNet(BaseModel):
         dropout=0.1,
         style_strength=1.0,
         device=None,
+        show: bool = False,
     ):
         super().__init__()
         self.device = device or torch.device('cpu')
@@ -31,6 +32,7 @@ class AdaINUNet(BaseModel):
         self.out_channels = out_channels
         self.time_emb_dim = time_emb_dim
         self.base_channels = base_channels
+        self.show = show
         
         # Time embedding
         time_embed_dim = time_emb_dim * 4
@@ -54,6 +56,7 @@ class AdaINUNet(BaseModel):
         self.attention_resolutions = attention_resolutions
         
         # Downsampling path
+        # All Resblock in downsampling path should use the basic variant
         for level, mult in enumerate(channel_mults):
             for _ in range(num_res_blocks):
                 layers = []
@@ -61,13 +64,13 @@ class AdaINUNet(BaseModel):
                 
                 # Add ResBlock
                 layers.append(
-                    StyledResBlock(
+                    ResBlock(
                         emb_channels=time_embed_dim,
                         dropout=dropout,
                         in_channels=ch,
                         out_channels=out_ch,
                         use_scale_shift_norm=True,
-                        style_strength=style_strength,
+                        # style_strength=style_strength,
                         device=self.device,
                     )
                 )
@@ -153,11 +156,6 @@ class AdaINUNet(BaseModel):
                     )
                 
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
-        
-        # Final output layer
-        # self.output_layer = nn.Sequential(
-        #     nn.Conv2d(ch, out_channels, kernel_size=3, padding=1, device=self.device)
-        # )
     
     def forward(self, x, timesteps, style=None):
         """
@@ -195,26 +193,21 @@ class AdaINUNet(BaseModel):
             else:
                 h = module(h)
             hs.append(h)
-
-        # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-        # plt.show()
+        if self.show:
+            plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
+            plt.show()
         
         # Middle
         h = self.middle_block(h, emb, style)
-        # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-        # plt.show()
+        if self.show:
+            plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
+            plt.show()
         
         # Upsampling
         for module in self.output_blocks:
-            # print("hs: ", len(hs))
-            # Concatenate with skip connection
             h = torch.cat([h, hs.pop()], dim=1)
             h = module(h, emb, style)
-            # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-            # plt.show()
-        
-        # Final output
-        # h = self.output_layer(h)
-        # plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
-        # plt.show()
+            if self.show:
+                plt.imshow(h[0, 0].detach().float().cpu().numpy(), cmap='viridis')
+                plt.show()
         return h

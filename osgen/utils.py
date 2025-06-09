@@ -14,6 +14,25 @@ class Utilities:
         pass
 
     @staticmethod
+    def train_test_split_indices(dataset, train_ratio: float = 0.8):
+        """
+        Split dataset indices into training and testing sets.
+
+        Args:
+            dataset: The dataset to split (only length is used).
+            train_ratio: The proportion of the dataset to include in the training set.
+
+        Returns:
+            A tuple of (train_indices, test_indices).
+        """
+        n = len(dataset)
+        indices = torch.randperm(n).tolist()
+        n_train = int(n * train_ratio)
+        train_indices = indices[:n_train]
+        test_indices = indices[n_train:]
+        return train_indices, test_indices
+
+    @staticmethod
     def load_model(model, path: str) -> None:
         """
         Load a model from a specified path.

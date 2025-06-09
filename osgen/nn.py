@@ -55,8 +55,11 @@ class TimestepEmbedSequential(nn.Sequential):
         for layer in self:
             if isinstance(layer, StyledResBlock):
                 x = layer(x, emb, style)
-            elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
+            # Add forward method for ResBlock
+            elif isinstance(layer, ResBlock):
                 x = layer(x, emb)
+            # elif hasattr(layer, "forward") and len(inspect.signature(layer.forward).parameters) > 2:
+            #     x = layer(x, emb)
             else:
                 x = layer(x)
         return x
