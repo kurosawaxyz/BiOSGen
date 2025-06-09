@@ -64,13 +64,13 @@ class AdaINUNet(BaseModel):
                 
                 # Add ResBlock
                 layers.append(
-                    ResBlock(
+                    StyledResBlock(
                         emb_channels=time_embed_dim,
                         dropout=dropout,
                         in_channels=ch,
                         out_channels=out_ch,
                         use_scale_shift_norm=True,
-                        # style_strength=style_strength,
+                        style_strength=style_strength,
                         device=self.device,
                     )
                 )
