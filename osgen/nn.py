@@ -76,6 +76,8 @@ class SpatialAdaIN(BaseModel):
             kernel_size=1,
             bias=False
         )
+        for param in self.channel_reducer.parameters():
+            param.requires_grad = False
         
     def forward(self, content, style):
         
