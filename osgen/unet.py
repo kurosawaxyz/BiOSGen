@@ -72,6 +72,7 @@ class AdaINUNet(BaseModel):
                         use_scale_shift_norm=True,
                         style_strength=style_strength,
                         device=self.device,
+                        use_conv=True if level == 0 else False,  # Use conv only for the first block
                     )
                 )
                 
@@ -105,6 +106,7 @@ class AdaINUNet(BaseModel):
                 use_scale_shift_norm=True,
                 style_strength=style_strength,
                 device=self.device,
+                use_conv=True,  # Use conv for the middle block
             ),
             FlashSelfAttention(z_dim=ch, heads=8),
             StyledResBlock(
