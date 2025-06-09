@@ -90,17 +90,7 @@ class SpatialAdaIN(BaseModel):
         )
         
         # Match channels if needed
-        if spatial_resized.shape[1] != content.shape[1]:
-            # if (self.channel_reducer is None or 
-            #     self.channel_reducer.in_channels != spatial_resized.shape[1] or
-            #     self.channel_reducer.out_channels != content.shape[1]):
-                
-            #     self.channel_reducer = nn.Conv2d(
-            #         spatial_resized.shape[1], 
-            #         content.shape[1], 
-            #         kernel_size=1
-            #     ).to(content.device)
-                
+        if spatial_resized.shape[1] != content.shape[1]: 
             style_features = self.channel_reducer(spatial_resized)
         else:
             style_features = spatial_resized
