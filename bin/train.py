@@ -78,6 +78,10 @@ def main():
     # Initialize your pipeline
     pipeline = OSGenPipeline()
 
+    # Count the number of parameters in the pipeline
+    num_params = sum(p.numel() for p in pipeline.parameters() if p.requires_grad)
+    print(f"Number of trainable parameters in the pipeline: {num_params}")
+
     # Hyperparameters
     verbose = cfg.verbose
     num_epochs = cfg.num_epochs
@@ -91,8 +95,8 @@ def main():
     width = cfg.width
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    lambda_content = 1e-2 # cfg.lambda_content
-    lambda_style = 1e-8 # cfg.lambda_style
+    lambda_content = cfg.lambda_content
+    lambda_style = cfg.lambda_style
     # lambda_tv = cfg.lambda_tv
 
     # Training loop

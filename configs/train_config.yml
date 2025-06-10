@@ -15,6 +15,6 @@ optimizer:
 
 early_stopping_patience: 10
 
-lambda_content: 1e-2
+lambda_content: 1e-3
 lambda_style: 1e-8
 # lambda_tv: 1e-4
