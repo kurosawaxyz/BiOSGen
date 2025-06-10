@@ -1,15 +1,4 @@
-<div align="center">
-  
-  <a href="#"><img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&duration=3000&pause=1000&color=00FF00&center=true&vCenter=true&width=435&lines=BiOSGen&size=40" alt="Typing SVG" /></a>
-</div>
-
-This project presents the work conducted during my first-year master's internship at the ***Paris Brain Institute*** (ICM), in association with the ***DU Sorbonne Data Analytics*** program at ***Université Paris 1 Panthéon-Sorbonne***.
-
-The primary objective was to develop multi-scale image preprocessing and analysis techniques, as well as an integration and fusion method for image analysis. Specifically, this work focused on tumor staining style transfer from H&E to IHC images, aiming to reduce financial costs and save time for more technical analyses.
-
-Two style transfer models were compared: one using a traditional GAN-based approach and another leveraging a more advanced diffusion-based architecture.
-
-Future work will focus on refining the diffusion model to generate more accurate IHC images while incorporating patient-specific health factors that may influence tumor growth, progression, and treatment response.
+# Clinical Neural Style Transfer for Tumor Staining with Stable Diffusion Models
 
 ## Model architecture
 <div align="center">
@@ -22,32 +11,38 @@ Future work will focus on refining the diffusion model to generate more accurate
 ```txt
 BiOSGen/
 │── preprocess/            
-│   ├── __init__.py              
+│   ├── __init__.py      
+│   ├── dataloader.py            
+│   ├── patches_utils.py    
 │   ├── tissue_mask.py      
-│   ├── utils.py  
 │── osgen/                   
 │   ├── __init__.py             
-│   ├── dataloader.py   
+│   ├── base.py
+│   ├── embeddings.py
 │   ├── loss.py
 │   ├── nn.py
 │   ├── pipeline.py         # Main pipeline for OSGen
 │   ├── unet.py
+│   ├── utils.py
 │   ├── vae.py
-│   ├── vit.py      
 │── configs/               
-│   ├── config.yml
 │   ├── train_config.yml          
-│   ├── test_config.yml        
+│   ├── eval_config.yml        
 │── bin/                
 │   ├── train.py           
-│   ├── eval.py
-│   ├── test.py     
+│   ├── eval.py     
 │── scripts/                
-│   ├── launch.sh     
-│── environment.yml
-│── README.md               
-│── .gitignore  
-│── .gitattributes             
+│   ├── data_installer.py
+│   ├── data_installer.sh
+│   ├── setup_env.sh
+│   ├── launch.sh    
+│── notebooks/
+│── assets/  
+│── requirements.txt
+│── README.md    
+│── LICENSE
+│── setup.py
+│── pyproject.toml
 ```
 
 ## Users manual
