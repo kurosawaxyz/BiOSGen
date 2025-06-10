@@ -262,13 +262,6 @@ def main():
     ax2.set_xlabel('Epochs')
     # ax2.set_ylabel('Style Loss')
 
-    # # Middle row (spanning both columns): TV Loss
-    # ax3 = fig.add_subplot(gs[1, :])  # spans all columns in row 1
-    # ax3.plot(tv_loss, label='TV Loss')
-    # ax3.set_title('TV Loss', fontsize=15)
-    # ax3.set_xlabel('Epochs')
-    # ax3.set_ylabel('TV Loss')
-
     # Bottom row (spanning both columns): Total Loss
     ax4 = fig.add_subplot(gs[1, :])  # spans all columns in row 2
     ax4.plot(losses, label='Total Loss', color='red')
