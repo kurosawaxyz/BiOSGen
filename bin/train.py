@@ -45,24 +45,34 @@ def main():
 
     # Load the configuration file
     cfg = OmegaConf.load(args.config)
+    data_dir = args.data
+    checkpoints_dir = args.checkpoints
+    original_stain = args.original
+    style_stain = args.style
 
     # SRC antibodies
     tree_src = AntibodiesTree(
-        image_dir = "/root/BiOSGen/data/HE",
-        mask_dir = "/root/BiOSGen/data/tissue_masks/HE",
-        npz_dir = "/root/BiOSGen/data/bbox_info/HE_NKX3/HE"
+        image_dir = os.path.join(data_dir, original_stain),
+        mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
+        npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", original_stain)
     )
 
     # DST antibodies
     tree_dst = AntibodiesTree(
-        image_dir = "/root/BiOSGen/data/NKX3",
-        mask_dir = "/root/BiOSGen/data/tissue_masks/NKX3",
-        npz_dir = "/root/BiOSGen/data/bbox_info/HE_NKX3/NKX3"
+        image_dir = os.path.join(data_dir, style_stain),
+        mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
+        npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", style_stain)
     )
 
     # Print
     print("Nb antibodies: ", tree_src.get_nb_antibodies())
     print("Nb antibodies: ", tree_dst.get_nb_antibodies())
+
+    # Split train_tree and test tree
+    train_idx_src, test_idx_src = Utilities.train_test_split_indices(tree_src.antibodies)
+    train_idx_dst, test_idx_dst = Utilities.train_test_split_indices(tree_dst.antibodies)
+    print("Train src: ", len(train_idx_src), "Test src: ", len(test_idx_src))
+    print("Train dst: ", len(train_idx_dst), "Test dst: ", len(test_idx_dst))
 
 
     # Initialize your pipeline
@@ -110,9 +120,12 @@ def main():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
 
     # Get time
+    # Create checkpoints_dir if it does not exist
+    if not os.path.exists(checkpoints_dir):
+        os.makedirs(checkpoints_dir)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     # Create directory for saving checkpoints
-    checkpoint_dir = f"/checkpoints/{timestamp}"
+    checkpoint_dir = f"{checkpoints_dir}/{timestamp}"
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     print("Checkpoint directory created at:", checkpoint_dir)
@@ -196,9 +209,6 @@ def main():
 
         # Step the LR scheduler
         scheduler.step(current_loss)
-        
-        # for param_group in optimizer.param_groups:
-        #     print(f"Current learning rate: {param_group['lr']}")
 
         # # Early stopping (original implementation)
         # if current_loss < best_loss:
@@ -213,13 +223,16 @@ def main():
 
         if verbose: 
             if epoch % 25 == 0:
-                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{batch_size}, "
+                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i}/{batch_size}, "
                     f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, "
                     f"Total Loss: {total_loss.item():.4f}")
                 
                 # Save the checkpoints
                 torch.save(pipeline.state_dict(), f"{checkpoint_dir}/pipeline_epoch_{epoch+1}.pth")
                 print(f"Model saved at {checkpoint_dir}/pipeline_epoch_{epoch+1}.pth")
+
+                for param_group in optimizer.param_groups:
+                    print(f"Current learning rate: {param_group['lr']}")
 
     # Define end time
     end_time = time.time()
@@ -289,7 +302,7 @@ def main():
 
     # After your training loop
     # Save model components
-    torch.save(pipeline.state_dict(), f'{checkpoint_dir}/pipeline_best_{num_epochs}_{epoch}_epoch_512.pth')
+    torch.save(pipeline.state_dict(), f'{checkpoint_dir}/pipeline_best_{num_epochs}_{epoch+1}_epoch_512.pth')
 
     # Save the entire model state including optimizer
     checkpoint = {
@@ -302,7 +315,7 @@ def main():
         'style_losses': style_losses
     }
 
-    torch.save(checkpoint, f'{checkpoint_dir}/pipeline_full_{num_epochs}_{epoch}_epoch_512.pth')
+    torch.save(checkpoint, f'{checkpoint_dir}/pipeline_full_{num_epochs}_{epoch+1}_epoch_512.pth')
 
     # SAMPLE TEST GEN
     idx_src = 20 # torch.randint(0, len(tree_src.antibodies), (1,)).item()
