@@ -116,7 +116,7 @@ provide a notebook to demonstrate how to process and plot the data.
 ```bash
 python bin/train.py \
   --config configs/train_config.yml \
-  --original HE \
+  --original <original_style> \
   --style <destination_style> \
   --checkpoints <path_to_save_checkpoints> \
   --data <path_to_data> 
