@@ -80,8 +80,8 @@ def main():
 
     # Hyperparameters
     verbose = cfg.verbose
-    num_epochs = 100
-    batch_size = 50 # cfg.batch_size
+    num_epochs = cfg.num_epochs
+    batch_size = cfg.batch_size
     lr = cfg.lr
     optimizer = optim.AdamW([p for p in pipeline.parameters() if p.requires_grad], 
                             lr=cfg.optimizer.params.lr, weight_decay=cfg.optimizer.params.weight_decay, eps=cfg.optimizer.params.eps)

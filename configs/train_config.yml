@@ -1,6 +1,6 @@
 verbose: True
-num_epochs: 100
-batch_size: 1
+num_epochs: 200
+batch_size: 32
 lr: 1e-3
 channels: 64
 height: 128
