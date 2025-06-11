@@ -23,4 +23,5 @@ omegaconf
 scipy
 torchviz
 pytorch-fid
+clean-fid
 
