@@ -109,3 +109,15 @@ All images from Hematoxylin & Eosin (H&E) and Immunohistochemistry (IHC) stainin
 
 AI4SCR uploaded the all relevant information to [Figshare]( https://figshare.com/projects/VirtualMultiplexer/230498) and 
 provide a notebook to demonstrate how to process and plot the data.
+
+
+## How to use
+### Training
+```bash
+python bin/train.py \
+  --config configs/train_config.yml \
+  --original <original_style> \
+  --style <destination_style> \
+  --checkpoints <path_to_save_checkpoints> \
+  --data <path_to_data> 
+```
