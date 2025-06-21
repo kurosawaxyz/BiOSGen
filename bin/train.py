@@ -102,6 +102,9 @@ def main():
 
     lambda_content = cfg.lambda_content
     lambda_style = cfg.lambda_style
+    lambda_ca = cfg.lambda_ca
+    ca_type = cfg.ca_type
+    print(f"Color Alignment Method: {ca_type}")
     # lambda_tv = cfg.lambda_tv
 
     # Training loop
@@ -123,6 +126,7 @@ def main():
     losses = []
     content_losses = []
     style_losses = []
+    ca_losses = []
     # tv_losses = []
 
     # Add LR scheduler
@@ -163,7 +167,7 @@ def main():
         avg_loss = []
         content_loss = []
         style_loss = []
-        tv_loss = []
+        ca_loss = []
 
         # Assuming patches_src and patches_dst are lists or numpy arrays
         # num_samples = 4 # len(patches_src)
@@ -204,7 +208,7 @@ def main():
                 break
 
             # Compute loss
-            content_l, style_l, total_loss = pipeline.compute_loss(src_tensor, dst_tensor, decoded, lambda_content, lambda_style)
+            content_l, style_l, ca_l, total_loss = pipeline.compute_loss(src_tensor, dst_tensor, decoded, lambda_content, lambda_style, lambda_ca, ca_type)
 
             # Break if total_loss is NaN
             if torch.isnan(total_loss):
@@ -212,12 +216,13 @@ def main():
                 break
 
             # print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{len(patches_src)}, "
-            #         f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, "
+            #         f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, Color Alignment Loss: {ca_l.item():.4f}, "
             #         f"Total Loss: {total_loss.item():.4f}")
 
             avg_loss.append(total_loss.item())
             content_loss.append(content_l.item())
             style_loss.append(style_l.item())
+            ca_loss.append(ca_l.item())
             # tv_loss.append(tv_l.item())
 
             # Backpropagation
@@ -230,6 +235,7 @@ def main():
         losses.append(current_loss)
         content_losses.append(np.mean(content_loss))
         style_losses.append(np.mean(style_loss))
+        ca_losses.append(np.mean(ca_loss))
 
         # Step the LR scheduler
         scheduler.step(current_loss)
@@ -249,6 +255,7 @@ def main():
             if epoch % 25 == 0:
                 print(f"Epoch {epoch+1}/{num_epochs}, Batch {i}/{batch_size}, "
                     f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, "
+                    f"Color Alignment Loss: {ca_l.item():.4f}, "
                     f"Total Loss: {total_loss.item():.4f}")
                 
                 # Save the checkpoints
@@ -270,7 +277,7 @@ def main():
     print(f"Peak memory: {torch.cuda.max_memory_allocated() / 1024**2:.2f} MB")
 
     fig = plt.figure(figsize=(20, 15))
-    gs = gridspec.GridSpec(2, 2, height_ratios=[3, 3])  # Adjusted ratio
+    gs = gridspec.GridSpec(2, 3, figure=fig)
 
     # Upper left: Content Loss
     ax1 = fig.add_subplot(gs[0, 0])
@@ -285,6 +292,12 @@ def main():
     ax2.set_title('Style Loss', fontsize=15)
     ax2.set_xlabel('Epochs')
     # ax2.set_ylabel('Style Loss')
+
+    # Upper middle: Color Alignment Loss
+    ax3 = fig.add_subplot(gs[0, 2])
+    ax3.plot(ca_losses, label='Color Alignment Loss', color='orange')
+    ax3.set_title('Color Alignment Loss', fontsize=15)
+    ax3.set_xlabel('Epochs')
 
     # Bottom row (spanning both columns): Total Loss
     ax4 = fig.add_subplot(gs[1, :])  # spans all columns in row 2

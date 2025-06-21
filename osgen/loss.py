@@ -144,3 +144,163 @@ def total_variation_loss(img, weight=1.0):
     loss = torch.sum(torch.abs(img[:, :, :, :-1] - img[:, :, :, 1:])) + \
            torch.sum(torch.abs(img[:, :, :-1, :] - img[:, :, 1:, :]))
     return weight * loss
+
+
+
+def wasserstein_color_loss(style_image, generated_image, lambda_color=1.0):
+    """
+    Approximate Wasserstein distance for color distribution matching.
+    Uses sorting-based approach that maintains differentiability.
+    """
+    if style_image.shape != generated_image.shape:
+        generated_image = F.interpolate(generated_image, size=style_image.shape[2:], 
+                                      mode="bilinear", align_corners=False)
+    
+    total_loss = 0
+    
+    # Process each color channel
+    for c in range(style_image.shape[1]):
+        style_channel = style_image[:, c, :, :].flatten()
+        gen_channel = generated_image[:, c, :, :].flatten()
+        
+        # Sort the pixel values (this maintains gradients)
+        style_sorted, _ = torch.sort(style_channel)
+        gen_sorted, _ = torch.sort(gen_channel)
+        
+        # Compute 1-Wasserstein distance (L1 norm of sorted differences)
+        wasserstein_dist = torch.mean(torch.abs(style_sorted - gen_sorted))
+        total_loss += wasserstein_dist
+    
+    return lambda_color * total_loss
+
+def moment_matching_loss(style_image, generated_image, moments=[1, 2, 3, 4], lambda_color=1.0):
+    """
+    Match statistical moments (mean, variance, skewness, kurtosis) of color distributions.
+    Very efficient and differentiable.
+    """
+    if style_image.shape != generated_image.shape:
+        generated_image = F.interpolate(generated_image, size=style_image.shape[2:], 
+                                      mode="bilinear", align_corners=False)
+    
+    total_loss = 0
+    
+    for c in range(style_image.shape[1]):
+        style_channel = style_image[:, c, :, :].flatten()
+        gen_channel = generated_image[:, c, :, :].flatten()
+        
+        channel_loss = 0
+        for moment in moments:
+            # Compute centered moments
+            if moment == 1:
+                # Mean
+                style_moment = torch.mean(style_channel)
+                gen_moment = torch.mean(gen_channel)
+            else:
+                # Higher order moments
+                style_mean = torch.mean(style_channel)
+                gen_mean = torch.mean(gen_channel)
+                
+                style_moment = torch.mean((style_channel - style_mean) ** moment)
+                gen_moment = torch.mean((gen_channel - gen_mean) ** moment)
+            
+            moment_diff = torch.abs(style_moment - gen_moment)
+            channel_loss += moment_diff
+        
+        total_loss += channel_loss
+    
+    return lambda_color * total_loss
+
+def lab_color_loss(style_image, generated_image, lambda_color=1.0):
+    """
+    Color matching in LAB color space for perceptually uniform color alignment.
+    RGB to LAB conversion is differentiable.
+    """
+    def rgb_to_lab(rgb_tensor):
+        """Differentiable RGB to LAB conversion"""
+        # Normalize to [0, 1] if not already
+        rgb = (rgb_tensor + 1) / 2  # Assuming input in [-1, 1]
+        
+        # RGB to XYZ conversion matrix (sRGB)
+        rgb_to_xyz_matrix = torch.tensor([
+            [0.4124564, 0.3575761, 0.1804375],
+            [0.2126729, 0.7151522, 0.0721750],
+            [0.0193339, 0.1191920, 0.9503041]
+        ], device=rgb_tensor.device, dtype=rgb_tensor.dtype)
+        
+        # Reshape for matrix multiplication
+        B, C, H, W = rgb.shape
+        rgb_flat = rgb.permute(0, 2, 3, 1).reshape(-1, 3)
+        
+        # Convert to XYZ
+        xyz = torch.matmul(rgb_flat, rgb_to_xyz_matrix.T)
+        
+        # XYZ to LAB (simplified, approximate)
+        # Note: This is a simplified version for gradient flow
+        L = torch.pow(xyz[:, 1], 1/3) * 116 - 16
+        a = 500 * (torch.pow(xyz[:, 0], 1/3) - torch.pow(xyz[:, 1], 1/3))
+        b = 200 * (torch.pow(xyz[:, 1], 1/3) - torch.pow(xyz[:, 2], 1/3))
+        
+        lab = torch.stack([L, a, b], dim=1)
+        return lab.reshape(B, H, W, 3).permute(0, 3, 1, 2)
+    
+    if style_image.shape != generated_image.shape:
+        generated_image = F.interpolate(generated_image, size=style_image.shape[2:], 
+                                      mode="bilinear", align_corners=False)
+    
+    # Convert to LAB space
+    style_lab = rgb_to_lab(style_image)
+    gen_lab = rgb_to_lab(generated_image)
+    
+    # Compute moment matching in LAB space
+    total_loss = 0
+    for c in range(3):  # L, A, B channels
+        style_channel = style_lab[:, c, :, :].flatten()
+        gen_channel = gen_lab[:, c, :, :].flatten()
+        
+        # Match mean and variance in LAB space
+        style_mean = torch.mean(style_channel)
+        gen_mean = torch.mean(gen_channel)
+        
+        style_var = torch.var(style_channel)
+        gen_var = torch.var(gen_channel)
+        
+        mean_loss = torch.abs(style_mean - gen_mean)
+        var_loss = torch.abs(style_var - gen_var)
+        
+        total_loss += mean_loss + var_loss
+    
+    return lambda_color * total_loss
+
+def adaptive_color_loss(style_image, generated_image, lambda_color=1.0):
+    """
+    Combines multiple color alignment approaches for robust matching.
+    Uses weighted combination of moment matching and soft histogram.
+    """
+    # Compute individual losses
+    moment_loss = moment_matching_loss(style_image, generated_image, lambda_color=1.0)
+    wasserstein_loss = wasserstein_color_loss(style_image, generated_image, lambda_color=1.0)
+    
+    # Weighted combination
+    total_loss = 0.6 * moment_loss + 0.4 * wasserstein_loss
+    
+    return lambda_color * total_loss
+
+def color_alignment_loss(style_image, generated_image, method='wasserstein', lambda_color=1.0, **kwargs):
+    """
+    Unified interface for different color alignment methods.
+    
+    Args:
+        method: 'wasserstein', 'moment_matching', 'lab', 'adaptive'
+        lambda_color: Weight for the color loss
+        **kwargs: Additional parameters for specific methods
+    """
+    if method == 'wasserstein':
+        return wasserstein_color_loss(style_image, generated_image, lambda_color=lambda_color)
+    elif method == 'moment_matching':
+        return moment_matching_loss(style_image, generated_image, lambda_color=lambda_color, **kwargs)
+    elif method == 'lab':
+        return lab_color_loss(style_image, generated_image, lambda_color=lambda_color)
+    elif method == 'adaptive':
+        return adaptive_color_loss(style_image, generated_image, lambda_color=lambda_color)
+    else:
+        raise ValueError(f"Unknown method: {method}")

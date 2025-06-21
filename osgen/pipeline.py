@@ -121,12 +121,12 @@ class OSGenPipeline(BaseModel):
         return decoded
     
     # Compute loss
-    def compute_loss(self, src_tensor: torch.Tensor, dst_tensor: torch.Tensor, generated_image: torch.Tensor, lambda_content: torch.float = 0.001, lambda_style: torch.float = 0.0001, lambda_tv = 1e-5) -> torch.Tensor:
+    def compute_loss(self, src_tensor: torch.Tensor, dst_tensor: torch.Tensor, generated_image: torch.Tensor, lambda_content: torch.float = 0.001, lambda_style: torch.float = 0.0001, lambda_ca = 1e-5, ca_type="wasserstein") -> torch.Tensor:
         """
         Compute the loss for the pipeline.
         Args:
             src_tensor (torch.Tensor): Original image tensor.
-            dst_tensor (torch.Tensor): Style image tensor.
+            dst_tensor (torch.Tensor): Style image tensor.      
             generated_image (torch.Tensor): Generated image tensor.
         Returns:
             torch.Tensor: Computed loss.
@@ -143,8 +143,15 @@ class OSGenPipeline(BaseModel):
                     generated_image=generated_image,
                     lambda_style=1.0  # Using 1.0 here since we're scaling outside
                 )
+        ca_l = lambda_ca * color_alignment_loss(
+                    style_image=dst_tensor,
+                    generated_image=generated_image,
+                    lambda_color=1.0,  # Using 1.0 here since we're scaling outside
+                    method=ca_type
+                )
+        
         # Total variation loss
         # tv_l = lambda_tv * total_variation_loss(generated_image)
-        
-        total_loss = content_l + style_l
-        return content_l, style_l, total_loss   # , tv_l
+
+        total_loss = content_l + style_l + ca_l
+        return content_l, style_l, ca_l, total_loss   # , tv_l
