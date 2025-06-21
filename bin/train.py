@@ -20,6 +20,11 @@ torch.manual_seed(0)
 import argparse
 import torch.optim as optim
 import matplotlib.gridspec as gridspec
+from torchinfo import summary
+# from torchviz import make_dot
+
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Personalized modules
 from preprocess.dataloader import AntibodiesTree
@@ -133,6 +138,21 @@ def main():
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     print("Checkpoint directory created at:", checkpoint_dir)
+
+    # Get model summary
+    print("Model summary:")
+    input1 = torch.randn(batch_size, channels, height, width, device=device)
+    input2 = torch.randn(batch_size, channels, height, width, device=device)
+    input3 = torch.randint(0, 1000, (input1.size(0),), device=device)  # Random timesteps
+    summa = summary(pipeline, input_data=(input1, input2, input3), device=device.type)
+    print(summa)
+    # Save model summary to a file
+    with open(f"{checkpoint_dir}/model_summary.txt", "w") as f:
+        f.write(str(summa))
+    # # Draw the model graph
+    # output = pipeline(input1, input2, input3)
+    # make_dot(output, params=dict(pipeline.named_parameters())).render(f"{checkpoint_dir}/model_graph", format="png")
+
 
     # Record memory stats
     torch.cuda.reset_peak_memory_stats()

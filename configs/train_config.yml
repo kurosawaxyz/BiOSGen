@@ -2,9 +2,9 @@ verbose: True
 num_epochs: 100
 batch_size: 50
 lr: 1e-3
-channels: 64
-height: 128
-width: 128
+channels: 3
+height: 512
+width: 512
 
 optimizer: 
   type: Adam
