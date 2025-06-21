@@ -2,8 +2,8 @@
 # @Author: H. T. Duong Vu
 
 from PIL import Image
-# import torch 
-# from transformers import AutoModelForCausalLM 
+import torch 
+from transformers import AutoModelForCausalLM 
 
 import numpy as np
 from typing import List
@@ -279,23 +279,23 @@ class PatchesUtilities:
 
 
 
-# # moondream
-# def load_md(
-#     device: str = "cuda"
-# ) -> AutoModelForCausalLM:
-#     """
-#     Load the moondream model for image processing.
-#     Args:
-#         device (str): Device to load the model on. Default is "cuda".
-#     Returns:
-#         AutoModelForCausalLM: Loaded moondream model.
+# moondream
+def load_md(
+    device: str = "cuda"
+) -> AutoModelForCausalLM:
+    """
+    Load the moondream model for image processing.
+    Args:
+        device (str): Device to load the model on. Default is "cuda".
+    Returns:
+        AutoModelForCausalLM: Loaded moondream model.
 
-#     Caution: device + type must be same as the one used to train the model.
-#     """
-#     device = torch.device(device)
-#     model = AutoModelForCausalLM.from_pretrained(
-#         "vikhyatk/moondream2",
-#         revision="2025-01-09",
-#         trust_remote_code=True,
-#     ).to(device)
-#     return model
+    Caution: device + type must be same as the one used to train the model.
+    """
+    device = torch.device(device)
+    model = AutoModelForCausalLM.from_pretrained(
+        "vikhyatk/moondream2",
+        revision="2025-01-09",
+        trust_remote_code=True,
+    ).to(device)
+    return model

@@ -138,7 +138,7 @@ def main():
         os.makedirs(checkpoints_dir)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     # Create directory for saving checkpoints
-    checkpoint_dir = f"{checkpoints_dir}/{timestamp}"
+    checkpoint_dir = f"{checkpoints_dir}/{timestamp}_{original_stain}_{style_stain}_{ca_type}"
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     print("Checkpoint directory created at:", checkpoint_dir)
@@ -149,7 +149,6 @@ def main():
     input2 = torch.randn(batch_size, channels, height, width, device=device)
     input3 = torch.randint(0, 1000, (input1.size(0),), device=device)  # Random timesteps
     summa = summary(pipeline, input_data=(input1, input2, input3), device=device.type)
-    print(summa)
     # Save model summary to a file
     with open(f"{checkpoint_dir}/model_summary.txt", "w") as f:
         f.write(str(summa))
