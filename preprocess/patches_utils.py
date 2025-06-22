@@ -276,6 +276,87 @@ class PatchesUtilities:
         desc = model.query(enc_image, "Describe this image.\n")
         print("Description: ", desc)
         return desc
+    
+    @staticmethod
+    def get_image_patches_full_half(
+        image: np.ndarray, 
+        patch_size: int = 512,
+        is_visualize: bool = False
+    ) -> List[np.ndarray]:
+        h, w, _ = image.shape
+        
+        # Calculate stride (half patch size for overlapping patches)
+        stride = patch_size // 2
+
+        # Calculate padding to ensure we can extract complete patches
+        # We need enough padding so that the last patch starting position allows a full patch
+        pad_h = max(0, stride - (h - patch_size) % stride) if h > patch_size else patch_size - h
+        pad_w = max(0, stride - (w - patch_size) % stride) if w > patch_size else patch_size - w
+        
+        image_padded = np.pad(image, ((0, pad_h), (0, pad_w), (0, 0)), mode='constant', constant_values=255)
+
+        if is_visualize:
+            fig, ax = plt.subplots()
+            ax.imshow(Image.fromarray(image_padded))
+
+        patches = []
+        for y in range(0, image_padded.shape[0] - patch_size + 1, stride):
+            for x in range(0, image_padded.shape[1] - patch_size + 1, stride):
+                patch = image_padded[y:y + patch_size, x:x + patch_size]
+                patches.append(patch)
+                
+                if is_visualize:
+                    rect = Rectangle((x, y), patch_size, patch_size, linewidth=1, edgecolor='green', facecolor='none')
+                    ax.add_patch(rect)
+
+        if is_visualize:
+            plt.title(f"Total patches: {len(patches)}")
+            plt.show()
+
+        return patches
+
+    @staticmethod
+    def replace_patches_in_image_full_half(
+        original_image: np.ndarray,
+        generated_patches: List[np.ndarray],
+        patch_size: int = 512
+    ) -> np.ndarray:
+        h, w, _ = original_image.shape
+        
+        # Calculate stride (half patch size for overlapping patches)
+        stride = patch_size // 2
+
+        # Same padding calculation as extraction function
+        pad_h = max(0, stride - (h - patch_size) % stride) if h > patch_size else patch_size - h
+        pad_w = max(0, stride - (w - patch_size) % stride) if w > patch_size else patch_size - w
+
+        image_padded = np.pad(original_image, ((0, pad_h), (0, pad_w), (0, 0)), mode='constant', constant_values=255)
+
+        # Create arrays to handle overlapping patches
+        reconstructed_image = np.zeros_like(image_padded).astype(np.float64)
+        weight_map = np.zeros(image_padded.shape[:2], dtype=np.float64)
+
+        # Replace patches in the same order as extraction with overlapping
+        patch_idx = 0
+        for y in range(0, image_padded.shape[0] - patch_size + 1, stride):
+            for x in range(0, image_padded.shape[1] - patch_size + 1, stride):
+                if patch_idx < len(generated_patches):
+                    # Add the patch to the reconstruction (weighted average for overlapping regions)
+                    reconstructed_image[y:y + patch_size, x:x + patch_size] += generated_patches[patch_idx].astype(np.float64)
+                    weight_map[y:y + patch_size, x:x + patch_size] += 1.0
+                    patch_idx += 1
+                else:
+                    print("Warning: Not enough patches to fill the image. Some areas remain unchanged.")
+                    break
+
+        # Average overlapping regions
+        # Avoid division by zero
+        weight_map[weight_map == 0] = 1
+        reconstructed_image = reconstructed_image / weight_map[:, :, np.newaxis]
+
+        # Convert back to original dtype and remove padding to return to original size
+        reconstructed_image = reconstructed_image.astype(original_image.dtype)
+        return reconstructed_image[:h, :w]
 
 
 
