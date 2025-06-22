@@ -239,16 +239,16 @@ def main():
         # Step the LR scheduler
         scheduler.step(current_loss)
 
-        # # Early stopping (original implementation)
-        # if current_loss < best_loss:
-        #     best_loss = current_loss
-        #     epochs_without_improvement = 0
-        # else:
-        #     epochs_without_improvement += 1
+        # Early stopping (original implementation)
+        if current_loss < best_loss:
+            best_loss = current_loss
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
 
-        # if epochs_without_improvement >= early_stopping_patience:
-        #     print(f"Early stopping at epoch {epoch+1}")
-        #     break
+        if epochs_without_improvement >= early_stopping_patience:
+            print(f"Early stopping at epoch {epoch+1}")
+            break
 
         if verbose: 
             if epoch % 25 == 0:
