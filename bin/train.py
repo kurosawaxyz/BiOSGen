@@ -55,6 +55,19 @@ def main():
     original_stain = args.original
     style_stain = args.style
 
+    if style_stain == "NKX3": 
+        # Directory where your tumor PNGs are stored
+        directory = os.path.join(data_dir, style_stain)
+
+        for filename in os.listdir(directory):
+            if filename.endswith('.png') and 'NKX3' not in filename and 'NKX' in filename:
+                new_filename = filename.replace('NKX', 'NKX3')
+                old_path = os.path.join(directory, filename)
+                new_path = os.path.join(directory, new_filename)
+                os.rename(old_path, new_path)
+                print(f'Renamed: {filename} -> {new_filename}')
+
+
     # SRC antibodies
     tree_src = AntibodiesTree(
         image_dir = os.path.join(data_dir, original_stain),

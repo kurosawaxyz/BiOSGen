@@ -24,4 +24,4 @@ scipy
 torchviz
 pytorch-fid
 clean-fid
-
+torchinfo
