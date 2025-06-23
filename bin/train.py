@@ -227,10 +227,10 @@ def main():
             if torch.isnan(total_loss):
                 print(f"NaN loss at epoch {epoch+1}, batch {i+1}")
                 break
-
-            # print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{len(patches_src)}, "
-            #         f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, Color Alignment Loss: {ca_l.item():.4f}, "
-            #         f"Total Loss: {total_loss.item():.4f}")
+            if epoch == 0 and i == 0:
+                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{len(patches_src)}, "
+                        f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, Color Alignment Loss: {ca_l.item():.4f}, "
+                        f"Total Loss: {total_loss.item():.4f}")
 
             avg_loss.append(total_loss.item())
             content_loss.append(content_l.item())
@@ -253,12 +253,12 @@ def main():
         # Step the LR scheduler
         scheduler.step(current_loss)
 
-        # Early stopping (original implementation)
-        if current_loss < best_loss:
-            best_loss = current_loss
-            epochs_without_improvement = 0
-        else:
-            epochs_without_improvement += 1
+        # # Early stopping (original implementation)
+        # if current_loss < best_loss:
+        #     best_loss = current_loss
+        #     epochs_without_improvement = 0
+        # else:
+        #     epochs_without_improvement += 1
 
         if epochs_without_improvement >= early_stopping_patience:
             print(f"Early stopping at epoch {epoch+1}")
@@ -266,7 +266,7 @@ def main():
 
         if verbose: 
             if epoch % 25 == 0:
-                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i}/{batch_size}, "
+                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i}/{min(len(patches_src), len(patches_dst))}, "
                     f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, "
                     f"Color Alignment Loss: {ca_l.item():.4f}, "
                     f"Total Loss: {total_loss.item():.4f}")
