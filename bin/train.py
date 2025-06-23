@@ -152,6 +152,7 @@ def main():
     # Save model summary to a file
     with open(f"{checkpoint_dir}/model_summary.txt", "w") as f:
         f.write(str(summa))
+    # Uncomment the following line only if your GPU have very high RAM
     # # Draw the model graph
     # output = pipeline(input1, input2, input3)
     # make_dot(output, params=dict(pipeline.named_parameters())).render(f"{checkpoint_dir}/model_graph", format="png")
