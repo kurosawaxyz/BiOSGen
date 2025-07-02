@@ -17,5 +17,5 @@ early_stopping_patience: 10
 
 lambda_content: 1e-2
 lambda_style: 1e-8
-lambda_ca: 1
+lambda_ca: 2
 ca_type: "wasserstein"

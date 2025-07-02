@@ -228,7 +228,7 @@ def main():
                 print(f"NaN loss at epoch {epoch+1}, batch {i+1}")
                 break
             if epoch == 0 and i == 0:
-                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{len(patches_src)}, "
+                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{min(len(patches_src), len(patches_dst))}, "
                         f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, Color Alignment Loss: {ca_l.item():.4f}, "
                         f"Total Loss: {total_loss.item():.4f}")
 
