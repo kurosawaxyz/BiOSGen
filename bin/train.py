@@ -69,18 +69,32 @@ def main():
 
 
     # SRC antibodies
-    tree_src = AntibodiesTree(
-        image_dir = os.path.join(data_dir, original_stain),
-        mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
-        npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", original_stain)
-    )
+    if original_stain != style_stain:
+        tree_src = AntibodiesTree(
+            image_dir = os.path.join(data_dir, original_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", original_stain)
+        )
 
-    # DST antibodies
-    tree_dst = AntibodiesTree(
-        image_dir = os.path.join(data_dir, style_stain),
-        mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
-        npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", style_stain)
-    )
+        # DST antibodies
+        tree_dst = AntibodiesTree(
+            image_dir = os.path.join(data_dir, style_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", style_stain)
+        )
+    else: 
+        tree_src = AntibodiesTree(
+            image_dir = os.path.join(data_dir, original_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_NKX3", original_stain)
+        )
+
+        # DST antibodies
+        tree_dst = AntibodiesTree(
+            image_dir = os.path.join(data_dir, style_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_NKX3", style_stain)
+        )
 
     # Print
     print("Nb antibodies: ", tree_src.get_nb_antibodies())
