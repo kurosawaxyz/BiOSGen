@@ -280,7 +280,7 @@ def main():
 
         if verbose: 
             if epoch % 25 == 0:
-                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i}/{min(len(patches_src), len(patches_dst))}, "
+                print(f"Epoch {epoch+1}/{num_epochs}, Batch {i+1}/{min(len(patches_src), len(patches_dst))}, "
                     f"Content Loss: {content_l.item():.4f}, Style Loss: {style_l.item():.4f}, "
                     f"Color Alignment Loss: {ca_l.item():.4f}, "
                     f"Total Loss: {total_loss.item():.4f}")
