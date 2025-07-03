@@ -114,12 +114,8 @@ provide a notebook to demonstrate how to process and plot the data.
 ## How to use
 ### Training
 ```bash
-python bin/train.py \
-  --config configs/train_config.yml \
-  --original <original_style> \
-  --style <destination_style> \
-  --checkpoints <path_to_save_checkpoints> \
-  --data <path_to_data> 
+chmod +x scripts/batch_train.sh
+./scripts/batch_train.sh
 ```
 
 ```mermaid
