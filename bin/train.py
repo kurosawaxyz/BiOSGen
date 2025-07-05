@@ -399,6 +399,7 @@ def main():
 
     # Plot decoded image
     gen = []
+    pipeline.eval()  # Set the pipeline to evaluation mode
     with torch.no_grad():
         for i in range(len(patches_src)):
             # Assign idx_src and idx_dst to the patches
