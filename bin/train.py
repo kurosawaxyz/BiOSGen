@@ -100,11 +100,11 @@ def main():
     print("Nb antibodies: ", tree_src.get_nb_antibodies())
     print("Nb antibodies: ", tree_dst.get_nb_antibodies())
 
-    # Split train_tree and test tree
-    train_idx_src, test_idx_src = Utilities.train_test_split_indices(tree_src.antibodies)
-    train_idx_dst, test_idx_dst = Utilities.train_test_split_indices(tree_dst.antibodies)
-    print("Train src: ", len(train_idx_src), "Test src: ", len(test_idx_src))
-    print("Train dst: ", len(train_idx_dst), "Test dst: ", len(test_idx_dst))
+    # # Split train_tree and test tree
+    # train_idx_src, test_idx_src = Utilities.train_test_split_indices(tree_src.antibodies)
+    # train_idx_dst, test_idx_dst = Utilities.train_test_split_indices(tree_dst.antibodies)
+    # print("Train src: ", len(train_idx_src), "Test src: ", len(test_idx_src))
+    # print("Train dst: ", len(train_idx_dst), "Test dst: ", len(test_idx_dst))
 
 
     # Initialize your pipeline
@@ -200,13 +200,13 @@ def main():
         # num_samples = 4 # len(patches_src)
         # for j in range(batch_size):
             # Select random patches from src and dst
-        idx_src = train_idx_src[torch.randint(0, len(train_idx_src), (1,)).item()]
+        idx_src = torch.randint(0, len(tree_src.antibodies), (1,)).item()
         patches_src = PatchesUtilities.get_image_patches_full(
             image = np.array(Image.open(tree_src.antibodies[idx_src])),
             # tissue_mask=PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_src.antibodies[idx_src])))
         )
 
-        idx_dst = train_idx_dst[torch.randint(0, len(train_idx_dst), (1,)).item()]
+        idx_dst = torch.randint(0, len(tree_dst.antibodies), (1,)).item()
         patches_dst = PatchesUtilities.get_image_patches_full(
             image = np.array(Image.open(tree_dst.antibodies[idx_dst])),
             # tissue_mask=PatchesUtilities.get_tissue_mask(np.array(Image.open(tree_dst.antibodies[idx_dst])))
