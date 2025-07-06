@@ -292,6 +292,25 @@ def main():
                 for param_group in optimizer.param_groups:
                     print(f"Current learning rate: {param_group['lr']}")
 
+                # Plot the last decoded, src_tensor and dst_tensor
+                decoded = decoded.to(torch.uint8)
+                src_tensor = src_tensor.to(torch.uint8)
+                dst_tensor = dst_tensor.to(torch.uint8)
+                fig, axes = plt.subplots(1, 6, figsize=(20, 15))  # 1x5 grid
+                for i in range(3):
+                    ax = axes[i]
+                    ax.imshow(decoded[0, i].detach().cpu().numpy(), cmap='viridis')
+                    ax.set_title(f'Ch {i}', fontsize=8)
+                    # ax.axis('off')
+
+                axes[3].imshow(decoded[0].permute(1,2,0).detach().cpu().numpy(), cmap='viridis')
+                axes[3].set_title('Generated patch', fontsize=16)
+                axes[4].imshow(src_tensor[0].permute(1,2,0).detach().cpu().numpy(), cmap='viridis')
+                axes[4].set_title('Original patch', fontsize=16)
+                axes[5].imshow(dst_tensor[0].permute(1,2,0).detach().cpu().numpy(), cmap='viridis')
+                axes[5].set_title('Style patch', fontsize=16)
+                plt.savefig(f"{checkpoint_dir}/decoded_src_dst_{epoch+1}.png")
+
     # Define end time
     end_time = time.time()
     # Calculate total training time
@@ -355,7 +374,7 @@ def main():
     axes[4].set_title('Original patch', fontsize=16)
     axes[5].imshow(dst_tensor[0].permute(1,2,0).detach().cpu().numpy(), cmap='viridis')
     axes[5].set_title('Style patch', fontsize=16)
-    plt.savefig(f"{checkpoint_dir}/decoded_src_dst.png")
+    plt.savefig(f"{checkpoint_dir}/decoded_src_dst_{epoch+1}.png")
 
     # After your training loop
     # Save model components
