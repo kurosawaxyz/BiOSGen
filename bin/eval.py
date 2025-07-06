@@ -22,6 +22,9 @@ import torch.optim as optim
 import matplotlib.gridspec as gridspec
 import re
 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 # Personalized modules
 from preprocess.dataloader import AntibodiesTree
 from preprocess.patches_utils import PatchesUtilities
@@ -57,18 +60,32 @@ def main():
         raise ValueError("Please provide a valid torch model for evaluation.")
 
     # SRC antibodies
-    tree_src = AntibodiesTree(
-        image_dir = os.path.join(data_dir, original_stain),
-        mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
-        npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", original_stain)
-    )
+    if original_stain != style_stain:
+        tree_src = AntibodiesTree(
+            image_dir = os.path.join(data_dir, original_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", original_stain)
+        )
 
-    # DST antibodies
-    tree_dst = AntibodiesTree(
-        image_dir = os.path.join(data_dir, style_stain),
-        mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
-        npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", style_stain)
-    )
+        # DST antibodies
+        tree_dst = AntibodiesTree(
+            image_dir = os.path.join(data_dir, style_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_{style_stain}", style_stain)
+        )
+    else: 
+        tree_src = AntibodiesTree(
+            image_dir = os.path.join(data_dir, original_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", original_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_NKX3", original_stain)
+        )
+
+        # DST antibodies
+        tree_dst = AntibodiesTree(
+            image_dir = os.path.join(data_dir, style_stain),
+            mask_dir = os.path.join(data_dir, "tissue_masks", style_stain),
+            npz_dir = os.path.join(data_dir, "bbox_info", f"{original_stain}_NKX3", style_stain)
+        )
 
     # Print
     print("Nb antibodies: ", tree_src.get_nb_antibodies())
@@ -112,9 +129,9 @@ def main():
     checkpoint_keys = set(checkpoints.keys())
     pipeline_keys = set(pipeline.state_dict().keys())
 
-    print("Keys only in checkpoint:", checkpoint_keys - pipeline_keys)
-    print("Keys only in pipeline:", pipeline_keys - checkpoint_keys)
-    print("Common keys:", checkpoint_keys & pipeline_keys)
+    print("Number of keys only in checkpoint:", len(checkpoint_keys - pipeline_keys))
+    print("Number of keys only in pipeline:", len(pipeline_keys - checkpoint_keys))
+    print("Number of common keys:", len(checkpoint_keys & pipeline_keys))
 
     # Check for shape mismatches in common keys
     print("\nShape mismatches:")
@@ -140,7 +157,7 @@ def main():
 
     # Evaluate
     for i in tqdm(range(len(tree_src.antibodies))):
-        idx_src = i # torch.randint(0, len(tree_src.antibodies), (1,)).item()
+        idx_src = i
         patches_src = PatchesUtilities.get_image_patches_full(
             image = np.array(Image.open(tree_src.antibodies[idx_src])),
         )
@@ -174,8 +191,11 @@ def main():
         )
 
         # Save the generated image
+        match = re.search(r'([^/]+)\.png$', tree_src.antibodies[idx_src])
+        name_src = match.group(1) if match else "unknown_src"
+
         generated_image = Image.fromarray(generated)
-        generated_image.save(os.path.join(results_dir, f"generated_{src_stain}_{dst_stain}_{idx_src}_{timestamps}.png"))
+        generated_image.save(os.path.join(results_dir, f"generated_{name_src}_{timestamps}.png"))
 
 if __name__ == "__main__":
     main()
