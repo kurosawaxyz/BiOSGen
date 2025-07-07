@@ -91,12 +91,6 @@ def main():
     print("Nb antibodies: ", tree_src.get_nb_antibodies())
     print("Nb antibodies: ", tree_dst.get_nb_antibodies())
 
-    # Split train_tree and test tree
-    train_idx_src, test_idx_src = Utilities.train_test_split_indices(tree_src.antibodies)
-    train_idx_dst, test_idx_dst = Utilities.train_test_split_indices(tree_dst.antibodies)
-    print("Train src: ", len(train_idx_src), "Test src: ", len(test_idx_src))
-    print("Train dst: ", len(train_idx_dst), "Test dst: ", len(test_idx_dst))
-
 
     # Initialize your pipeline
     pipeline = OSGenPipeline()
@@ -152,8 +146,6 @@ def main():
 
     # Hyperparameters
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    src_stain = original_stain
-    dst_stain = style_stain
 
     # Evaluate
     for i in tqdm(range(len(tree_src.antibodies))):
