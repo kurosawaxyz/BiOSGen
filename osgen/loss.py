@@ -109,11 +109,9 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
                                        mode="bilinear", 
                                        align_corners=False)
     
-    # Default layers if none provided - using lower and mid-level features for style
     if style_layers is None:
-        style_layers = ["0", "5", "10", "19", "28", "32"]  # Including more layers for better style capture
+        style_layers = ["0", "5", "10", "19", "28", "32"]
     
-    # Default weights if none provided
     if layer_weights is None:
         layer_weights = [1.0] * len(style_layers)
     
@@ -124,18 +122,13 @@ def style_loss(style_image, generated_image, style_layers=None, layer_weights=No
     for i, layer in enumerate(style_layers):
         weight = layer_weights[i]
         
-        # Get feature maps for this layer
         style_feat = style_features[layer]
         gen_feat = gen_features[layer]
         
-        # Compute Gram matrices
         G_style = gram_matrix(style_feat)
         G_gen = gram_matrix(gen_feat)
         
-        # Calculate Frobenius norm (squared distance between matrices)
-        # This is the squared distance between the two gram matrices
         layer_loss = torch.sum((G_gen - G_style) ** 2)
-        
         total_loss += weight * layer_loss
     
     return lambda_style * total_loss
