@@ -87,10 +87,8 @@ def extract_style_prefix(original_name):
         base_name = original_name[:-3]  # Remove '_HE'
         return base_name + '_'
     else:
-        # Fallback: assume last part after underscore is the modality
         parts = original_name.split('_')
         if len(parts) > 1:
-            # Join all parts except the last one, then add underscore
             return '_'.join(parts[:-1]) + '_'
     
     return original_name + '_'
@@ -289,10 +287,10 @@ def main():
     print(f"Using device: {device}")
     
     # Define your directories
-    results_dir = "results/20250706-151750_HE_CD44_wasserstein"  # Your generated images
-    content_dir = "/root/BiOSGen/data/HE"  # Original content images
-    style_dir = "/root/BiOSGen/data/CD44"     # Style reference images (optional)
-    
+    results_dir = args.results  
+    content_dir = args.original 
+    style_dir = args.style 
+
     # Evaluate all results
     print("Starting evaluation...")
     results_df = evaluate_directory(results_dir, content_dir, style_dir, device)
