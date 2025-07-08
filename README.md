@@ -31,7 +31,8 @@ BiOSGen/
 │── bin/                
 │   ├── train.py           
 │   ├── eval.py     
-│── scripts/                
+│── scripts/   
+│   ├── batch_train.sh
 │   ├── data_installer.py
 │   ├── data_installer.sh
 │   ├── setup_env.sh
