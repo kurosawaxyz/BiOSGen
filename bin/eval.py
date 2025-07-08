@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# @Author: H. T. Duong Vu
+
+# Basic libraries
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
