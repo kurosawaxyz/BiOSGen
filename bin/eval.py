@@ -15,7 +15,8 @@ from skimage.metrics import structural_similarity as ssim
 import matplotlib.pyplot as plt
 import pandas as pd
 import argparse
-
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from osgen.loss import *
 
 
@@ -278,18 +279,19 @@ def main():
 
     args = parser.parse_args()
 
-    save_fpath = f"{args.original}_{args.style}_evaluation_results"
+    save_fpath = f"eval_results/{args.original}_{args.style}_evaluation_results"
     if not os.path.exists(save_fpath):
         os.makedirs(save_fpath)
+    print(f"Results will be saved to: {save_fpath}")
 
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
     
     # Define your directories
-    results_dir = args.results  
-    content_dir = args.original 
-    style_dir = args.style 
+    results_dir = args.results
+    content_dir = os.path.join("data", args.original)
+    style_dir = os.path.join("data", args.style)
 
     # Evaluate all results
     print("Starting evaluation...")
@@ -327,7 +329,7 @@ def main():
     print(f"Average Combined Score: {results_df['combined_score'].mean():.4f}")
     
     # Plot results
-    plot_results(results_df)
+    plot_results(results_df, save_fpath)
     
     # Find best and worst results
     best_combined = results_df.loc[results_df['combined_score'].idxmax()]
