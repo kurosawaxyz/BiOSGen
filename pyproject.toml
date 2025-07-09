@@ -10,7 +10,7 @@ build-backend = "hatchling.build"
 [project]
 name = "biosgen"
 version = "1.0.0"
-description = "A sample Python project"
+description = "Tumor staining using Stable One-step Diffusion for fast neural style transfer"
 readme = "README.md"
 requires-python = "=3.10"
 license = { file = "LICENSE" }
@@ -22,7 +22,6 @@ authors = [{ name = "H. T. Duong Vu", email = "vuhoang.thduong@gmail.com" },
            { name = "Tamara Künzle", email = "tamara.kunzle@icm-institute.org" }]
 maintainers = [
   { name = "H. T. Duong Vu", email = "vuhoang.thduong@gmail.com" },
-  { name = "Tamara Künzle", email = "tamara.kunzle@icm-institute.org" }
 ]
 
 classifiers = [
