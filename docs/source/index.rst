@@ -7,32 +7,7 @@ BiOSGen is a [brief description of your project].
    :maxdepth: 2
    :caption: Contents:
 
-   installation
+   introduction
    quickstart
-   api/modules
-
-Installation
-============
-
-[Installation instructions here]
-
-Quick Start
-===========
-
-[Quick start guide here]
-
-API Reference
-=============
-
-.. toctree::
-   :maxdepth: 3
-   :caption: API Documentation:
-
-   api/modules
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   installation
+   tutorial/index
