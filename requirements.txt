@@ -1,0 +1,27 @@
+opencv-python
+torch
+torchvision
+numpy
+pandas
+matplotlib
+seaborn
+scikit-image
+requests
+scikit-learn
+pyyaml
+tqdm
+transformers
+einops
+# pyvips
+# git+https://github.com/openai/CLIP.git
+diffusers
+accelerate
+# loralib
+# peft
+thop
+omegaconf
+scipy
+torchviz
+pytorch-fid
+clean-fid
+torchinfo

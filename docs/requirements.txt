@@ -1,29 +1,13 @@
-opencv-python
-torch
-torchvision
+sphinx
+sphinx-rtd-theme
 numpy
 pandas
 matplotlib
-seaborn
-scikit-image
+scipy
 requests
-scikit-learn
 pyyaml
 tqdm
-transformers
+scikit-learn
+scikit-image
 einops
-# pyvips
-# git+https://github.com/openai/CLIP.git
-diffusers
-accelerate
-# loralib
-# peft
-thop
 omegaconf
-scipy
-torchviz
-pytorch-fid
-clean-fid
-torchinfo
-sphinx
-sphinx-rtd-theme
