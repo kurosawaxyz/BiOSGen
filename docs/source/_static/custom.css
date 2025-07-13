@@ -1,13 +1,13 @@
 /* custom.css */
 body {
-    background-color: #fefefe;
+    background-color: #ffe5ec;
 }
 
 a.reference.external {
-    color: #2a7ae2;
+    color: #ff8fab;
 }
 
 h1 {
-    color: #202020;
+    color: #171717;
     border-bottom: 2px solid #ccc;
 }
