@@ -3,7 +3,7 @@
 ## Model architecture
 <div align="center">
 
-  <img src="assets/diagram.png" alt="architecture" width="750"/>
+  <img src="docs/assets/diagram.png" alt="architecture" width="750"/>
 
 </div>
 
