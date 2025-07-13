@@ -12,7 +12,7 @@ And why do we build it?
 ------------------------
 Tumor staining is a time- and cost-intensive process due to several factors. Traditional staining protocols, such as *Hematoxylin and Eosin* (H&E) and *Immunohistochemistry* (IHC), require precise chemical preparation, specialized reagents, and strict protocols to ensure consistency. Staining quality can vary due to differences in reagent concentrations, incubation times, tissue thickness, and manual handling, leading to inconsistencies in diagnostics.
 
-Furthermore, the high cost of antibodies and reagents, combined with the labor-intensive nature of manual staining, makes large-scale analysis expensive and inefficient [noauthor_what_nodate]_.
+Furthermore, the high cost of antibodies and reagents, combined with the labor-intensive nature of manual staining, makes large-scale analysis expensive and inefficient.
 
 When generative models are applied for automated staining conversion, these factors introduce additional challenges. A model must learn complex mappings between H&E and IHC stains while accounting for tissue morphology variations, staining intensity, and potential artifacts.
 
@@ -20,10 +20,10 @@ Additionally, because histopathological images contain critical diagnostic infor
 
 These challenges make the development of a reliable and effective computational staining approach particularly difficult.
 
-.. image:: ../assets/diagram.png
-   :alt: architecture
-   :align: center
-   :width: 750
+.. .. image:: ../assets/diagram.png
+..    :alt: architecture
+..    :align: center
+..    :width: 750
 
 .. toctree::
    :maxdepth: 2
