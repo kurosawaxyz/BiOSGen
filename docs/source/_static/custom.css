@@ -1,6 +1,7 @@
 /* custom.css */
-body {
-    background-color: #000 !important;
+
+wy-nav-content {
+    background-color: #ffe5ec !important;
 }
 
 a.reference.external {
