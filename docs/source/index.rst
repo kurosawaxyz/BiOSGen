@@ -5,7 +5,7 @@ BiOSGen is a [brief description of your project].
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Summary:
 
    introduction
    quickstart
