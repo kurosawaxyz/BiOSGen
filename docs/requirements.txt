@@ -25,3 +25,5 @@ torchviz
 pytorch-fid
 clean-fid
 torchinfo
+sphinx
+sphinx-rtd-theme
