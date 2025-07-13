@@ -16,7 +16,7 @@ Furthermore, the high cost of antibodies and reagents, combined with the labor-i
 
 When generative models are applied for automated staining conversion, these factors introduce additional challenges. A model must learn complex mappings between H&E and IHC stains while accounting for tissue morphology variations, staining intensity, and potential artifacts.
 
-Additionally, because histopathological images contain critical diagnostic information, the model must preserve both visual fidelity and biological relevance, avoiding hallucinations or distortions that could lead to misdiagnosis. Patient-specific health factors, such as tumor type, stage, or underlying conditions, can also influence staining characteristics, adding another layer of complexity *(ref. [roy_cancer_2018]_)*.
+Additionally, because histopathological images contain critical diagnostic information, the model must preserve both visual fidelity and biological relevance, avoiding hallucinations or distortions that could lead to misdiagnosis. Patient-specific health factors, such as tumor type, stage, or underlying conditions, can also influence staining characteristics, adding another layer of complexity *(ref. [roy_cancer_2018]_) *.
 
 These challenges make the development of a reliable and effective computational staining approach particularly difficult.
 
