@@ -4,17 +4,10 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.10"
-
-sphinx:
-  configuration: docs/conf.py
-  builder: html
-  fail_on_warning: false
+  commands:
+    - python -m pip install -r docs/requirements.txt
+    - python -m sphinx -b html docs/source $READTHEDOCS_OUTPUT/html -c docs/
 
 python:
   install:
     - requirements: docs/requirements.txt
-
-# Tell Sphinx where to find source files
-build:
-  commands:
-    - python -m sphinx -b html docs/source $READTHEDOCS_OUTPUT/html -c docs/
