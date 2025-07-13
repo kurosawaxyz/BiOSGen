@@ -12,7 +12,7 @@ Welcome to BiOSGen's documentation!
    :maxdepth: 2
    :caption: Summary:
 
-   introduction
+   overview
    quickstart
    installation
    tutorial/index
