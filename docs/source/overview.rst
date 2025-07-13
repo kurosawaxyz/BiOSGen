@@ -1,4 +1,4 @@
-Overview of BiOSGen
+Overview
 ========================
 
 What is BiOSGen? 
