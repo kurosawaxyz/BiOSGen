@@ -31,12 +31,20 @@ These challenges make the development of a reliable and effective computational 
 ---------------------------------------------------
 .. toctree::
    :maxdepth: 2
-   :caption: Table of Contents
+   :caption: Overview
 
    introduction
-   architecture
-   features
    installation
    quickstart
-   tutorial/index
    appendix
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Components
+   components/index
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+   tutorial/index
