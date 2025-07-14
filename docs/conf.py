@@ -81,4 +81,4 @@ html_theme_options = {
 }
 
 html_logo = "assets/logo.png"
-html_favicon = "assets/logo.png"
+html_favicon = "assets/favicon.png"

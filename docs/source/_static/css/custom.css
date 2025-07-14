@@ -34,6 +34,13 @@ a:hover {
     color: #FF8FAB
 }
 
+.wy-side-nav-search input[type=text] {
+    width: 100%;
+    border-radius: 50px;
+    padding: 6px 12px;
+    border-color: #FB6F92
+}
+
 
 .rst-content .admonition-todo,.rst-content .attention,.rst-content .caution,.rst-content .warning,.rst-content .wy-alert-warning.admonition,.rst-content .wy-alert-warning.danger,.rst-content .wy-alert-warning.error,.rst-content .wy-alert-warning.hint,.rst-content .wy-alert-warning.important,.rst-content .wy-alert-warning.note,.rst-content .wy-alert-warning.seealso,.rst-content .wy-alert-warning.tip,.wy-alert.wy-alert-warning {
     background: #E1F4CB
