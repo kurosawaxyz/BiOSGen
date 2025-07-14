@@ -5,10 +5,15 @@ BiOSGen is a Pipeline for Clinical Neural Style Transfer for Tumor Staining with
 
 The primary objective was to develop multi-scale image preprocessing and analysis techniques, as well as an integration and fusion method for image analysis. Specifically, this work focused on tumor staining style transfer from H&E to IHC images, aiming to reduce financial costs and save time for more technical analyses.
 
-.. image:: ../assets/diagram.png
-   :alt: architecture
-   :align: center
-   :width: 750
+.. warning::
+
+   **Important Notice**
+
+   1. Environment setup using YAML file was removed due to issues with ``conda`` and ``pip`` packages. *(Update on 2025-04-26)*
+
+   2. Severe issues may arise while building wheels for ``flash-attn`` due to incompatibility with Python version >= 3.10.  
+      If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.
+
 
 And why do we build it? 
 ------------------------

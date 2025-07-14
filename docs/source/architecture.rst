@@ -1,4 +1,8 @@
-Pipeline architecture
+Architecture
 ===================================
 
-Test
+.. image:: ../assets/diagram.png
+   :alt: architecture
+   :align: center
+   :width: 750
+
