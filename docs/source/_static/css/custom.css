@@ -11,21 +11,6 @@
     border: #FF8FAB 2px solid;
 }
 
-.wy-nav-side {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    padding-bottom: 2em;
-    width: 300px;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    min-height: 100%;
-    color: #fff;
-    background: #171717;
-    z-index: 200;
-}
-
 .wy-menu-vertical header,.wy-menu-vertical p.caption {
     color: #FB6F92;
     height: 32px;
@@ -65,4 +50,30 @@ a:hover {
     background: #6ab0de;
     padding: 6px 12px;
     margin: -12px -12px 12px
+}
+
+.wy-nav-side {
+    background: #171717;
+}
+
+@media screen and (max-width: 768px) {
+    .wy-nav-content-wrap.shift {
+        left: 40%;
+    }
+
+        .wy-nav-side.shift {
+        width: 40%;
+        left: 0;
+    }
+}
+
+@media screen and (max-width: 512px) {
+    .wy-nav-content-wrap.shift {
+        left: 60%;
+    }
+
+        .wy-nav-side.shift {
+        width: 60%;
+        left: 0;
+    }
 }

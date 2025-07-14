@@ -77,7 +77,7 @@ html_theme_options = {
     'sticky_navigation': False,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': True,
+    'titles_only': False,
 }
 
 html_logo = "assets/logo.png"
