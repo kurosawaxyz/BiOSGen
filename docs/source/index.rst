@@ -17,7 +17,7 @@ The primary objective was to develop multi-scale image preprocessing and analysi
 ---------------------------------------------------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Table of Contents
 
    architecture
@@ -32,7 +32,7 @@ The primary objective was to develop multi-scale image preprocessing and analysi
    tutorial/example2
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: References
 
    appendix
