@@ -38,13 +38,5 @@ These challenges make the development of a reliable and effective computational 
    quickstart
    appendix
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Components
    components/index
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Tutorials
    tutorial/index
