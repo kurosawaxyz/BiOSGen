@@ -22,7 +22,6 @@ The primary objective was to develop multi-scale image preprocessing and analysi
 
    architecture
    installation
-   quickstart
 
 .. toctree::
    :maxdepth: 2
@@ -40,7 +39,7 @@ The primary objective was to develop multi-scale image preprocessing and analysi
 
 ---------------------------------------------------
 
-And why do we build it? 
+So why do we build it? 
 ------------------------
 Tumor staining is a time- and cost-intensive process due to several factors. Traditional staining protocols, such as *Hematoxylin and Eosin* (H&E) and *Immunohistochemistry* (IHC), require precise chemical preparation, specialized reagents, and strict protocols to ensure consistency. Staining quality can vary due to differences in reagent concentrations, incubation times, tissue thickness, and manual handling, leading to inconsistencies in diagnostics.
 
