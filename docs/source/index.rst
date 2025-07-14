@@ -27,11 +27,10 @@ Additionally, because histopathological images contain critical diagnostic infor
 
 These challenges make the development of a reliable and effective computational staining approach particularly difficult.
 
----
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Table of Contents
 
    introduction
    architecture
