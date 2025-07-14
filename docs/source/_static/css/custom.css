@@ -84,20 +84,3 @@ a:hover {
         left: 0;
     }
 }
-
-:root {
-    --readthedocs-flyout-max-width: 25em;
-    --readthedocs-flyout-font-family: var(--readthedocs-font-family);
-    --readthedocs-flyout-font-size: calc(var(--readthedocs-font-size) * 0.8);
-    --readthedocs-flyout-header-font-size: 1.125em;
-    --readthedocs-flyout-dt-font-size: 1.125em;
-    --readthedocs-flyout-dd-font-size: 1.125em;
-    --readthedocs-flyout-line-height: 1.25em;
-    --readthedocs-flyout-color: rgb(128, 128, 128);
-    --readthedocs-flyout-background-color: rgba(0, 0, 0, 0.2);
-    --readthedocs-flyout-current-version-color: #FB6F92;
-    --readthedocs-flyout-section-heading-color: rgb(128, 128, 128);
-    --readthedocs-flyout-item-link-color: rgb(252, 252, 252);
-    --readthedocs-flyout-divider-color: #413d3d;
-    --readthedocs-flyout-link-color: #FB6F92;
-}
