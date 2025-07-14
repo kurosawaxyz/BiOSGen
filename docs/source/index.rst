@@ -14,6 +14,31 @@ The primary objective was to develop multi-scale image preprocessing and analysi
    2. Severe issues may arise while building wheels for ``flash-attn`` due to incompatibility with Python version >= 3.10.  
       If you encounter this issue, please downgrade your Python version to 3.9 or 3.10.
 
+---------------------------------------------------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Table of Contents
+
+   architecture
+   installation
+   quickstart
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+
+   tutorial/example1
+   tutorial/example2
+
+.. toctree::
+   :maxdepth: 2
+   :caption: References
+
+   appendix
+   acknowledgements
+
+---------------------------------------------------
 
 And why do we build it? 
 ------------------------
@@ -23,21 +48,7 @@ Furthermore, the high cost of antibodies and reagents, combined with the labor-i
 
 When generative models are applied for automated staining conversion, these factors introduce additional challenges. A model must learn complex mappings between H&E and IHC stains while accounting for tissue morphology variations, staining intensity, and potential artifacts.
 
-Additionally, because histopathological images contain critical diagnostic information, the model must preserve both visual fidelity and biological relevance, avoiding hallucinations or distortions that could lead to misdiagnosis. Patient-specific health factors, such as tumor type, stage, or underlying conditions, can also influence staining characteristics, adding another layer of complexity (ref. [ref-roy_cancer_2018]_).
+Additionally, because histopathological images contain critical diagnostic information, the model must preserve both visual fidelity and biological relevance, avoiding hallucinations or distortions that could lead to misdiagnosis. Patient-specific health factors, such as tumor type, stage, or underlying conditions, can also influence staining characteristics, adding another layer of complexity.
 
 These challenges make the development of a reliable and effective computational staining approach particularly difficult.
 
-
----------------------------------------------------
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Table of Contents
-
-   introduction
-   architecture
-   features
-   installation
-   quickstart
-   tutorial/index
-   appendix
