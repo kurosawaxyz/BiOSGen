@@ -16,7 +16,7 @@ Install with PyPI
     pip install biosgen
 
 Install full code for further development
--------------------
+---------------------------------------------------------
 
 For training or code reproduction, you can clone the repository:
 
@@ -56,7 +56,7 @@ To install the training and testing data, run:
    Data installation instructions for the EMPaCT dataset are provided by `AI4SCR <https://github.com/AI4SCR/VirtualMultiplexer>`_.
 
 Downloading the EMPaCT Dataset
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The **European Multicenter Prostate Cancer Clinical and Translational Research Group (EMPaCT)** dataset [#empact1]_ [#empact2]_ [#empact3]_ contains prostate cancer tissue microarrays (TMAs) from 210 patients, with 4 cores per patient, across several clinically relevant markers.
 
@@ -64,7 +64,7 @@ All H&E and IHC-stained images are available on **Zenodo** under a *Creative Com
 You can download them from: https://zenodo.org/records/10066853
 
 Downloading Masks, Bounding Boxes and Data Splits
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 AI4SCR has uploaded the relevant masks, bounding boxes, and train-test splits to `Figshare <https://figshare.com/projects/VirtualMultiplexer/230498>`_.  
 They also provide a Jupyter notebook to demonstrate how to process and visualize the data.

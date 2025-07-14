@@ -19,3 +19,17 @@ Our model consists of four main components:
 4. **Post-Processing Module**: This component handles the post-processing of the generated IHC images, where the output of the generative backbone will be adjusted following clinical notices. This characteristics will be released in future updates.
 
 Together, these components form a comprehensive pipeline for automated tumor staining, addressing the challenges outlined earlier.
+
+----------------------------------------------
+
+Data Preprocessing Module
+----------------------------------------------
+
+Style Extractor
+----------------------------------------------
+
+Style Transfer Backbone
+----------------------------------------------
+
+Post-Processing Module
+----------------------------------------------

@@ -1,2 +1,2 @@
-Extracting Features from Tumor Images
-===================================
+Features Extraction
+===========================================

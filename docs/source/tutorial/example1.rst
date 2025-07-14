@@ -1,2 +1,2 @@
-Visualizing & Segmenting Tumor images
-===================================
+Visualization & Segmentation
+===========================================
