@@ -34,9 +34,8 @@ These challenges make the development of a reliable and effective computational 
    :caption: Overview
 
    introduction
-   architecture
-   features
    installation
    quickstart
    tutorial/index
+   components/index
    appendix
