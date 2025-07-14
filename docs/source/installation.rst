@@ -1,10 +1,10 @@
 Installation
 ============
 
-Requirements:
+Requirements
 -------------
 - Python 3.8 or higher
-- CUDA-enabled GPU (A100 or higher, required for training, for faster processing, optional for inference)
+- CUDA-enabled GPU (A100 or higher, required for training and faster processing, optional for inference)
 - Virtual conda environment (recommended)
 - pip
 
