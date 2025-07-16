@@ -1,0 +1,67 @@
+# Include essential project files
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+
+# Include configuration files
+include *.yml
+include *.yaml
+include *.json
+include *.cfg
+include *.ini
+include *.toml
+
+# Include documentation
+recursive-include docs *
+recursive-include examples *
+
+# Include data files and models (common in ML projects)
+recursive-include biosgen/data *
+recursive-include biosgen/models *
+recursive-include biosgen/configs *
+recursive-include biosgen/assets *
+
+# Include test files
+recursive-include tests *
+include pytest.ini
+include tox.ini
+include .coveragerc
+
+# Include any shell scripts or batch files
+include *.sh
+include *.bat
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude .git*
+global-exclude .pytest_cache
+global-exclude .coverage
+global-exclude .tox
+global-exclude .mypy_cache
+global-exclude *.egg-info
+global-exclude build
+global-exclude dist
+global-exclude .venv
+global-exclude venv
+global-exclude env
+
+# Exclude IDE files
+global-exclude .vscode
+global-exclude .idea
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+
+# Exclude OS files
+global-exclude Thumbs.db
+global-exclude desktop.ini
+
+# Exclude temporary and log files
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *.temp
