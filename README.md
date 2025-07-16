@@ -1,12 +1,4 @@
 # Clinical Neural Style Transfer for Tumor Staining with Stable Diffusion Models
-
-## Model architecture
-<div align="center">
-
-  <img src="docs/assets/diagram.png" alt="architecture" width="750"/>
-
-</div>
-
 ## Project structure
 ```txt
 BiOSGen/
