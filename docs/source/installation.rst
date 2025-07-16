@@ -3,9 +3,7 @@ Quick Start
 
 To get started quickly:
 
-1. Install the package with `pip install -i https://test.pypi.org/simple/ biosgen`.
-   This installs the latest version from the test PyPI repository.
-   If you want to install from the official PyPI repository, use `pip install biosgen`.
+1. Install the package with `pip install biosgen`.
 2. Run `biosgen --help` to see available commands.
 
 ---------------------------------------------------
