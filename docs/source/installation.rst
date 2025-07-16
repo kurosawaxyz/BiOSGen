@@ -33,7 +33,7 @@ For training or code reproduction, you can clone the repository:
 .. code-block:: bash
 
    git clone https://github.com/kurosawaxyz/BiOSGen.git
-   cd biosgen
+   cd BiOSGen
    pip install -e .
 
 It is recommended to use a virtual environment to avoid conflicts with other packages. You can create a virtual environment using conda:
