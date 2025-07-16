@@ -20,16 +20,16 @@ Our model consists of four main components:
 
 Together, these components form a comprehensive pipeline for automated tumor staining, addressing the challenges outlined earlier.
 
-----------------------------------------------
+.. ----------------------------------------------
 
-Data Preprocessing Module
-----------------------------------------------
+.. Data Preprocessing Module
+.. ----------------------------------------------
 
-Style Extractor
-----------------------------------------------
+.. Style Extractor
+.. ----------------------------------------------
 
-Style Transfer Backbone
-----------------------------------------------
+.. Style Transfer Backbone
+.. ----------------------------------------------
 
-Post-Processing Module
-----------------------------------------------
+.. Post-Processing Module
+.. ----------------------------------------------
