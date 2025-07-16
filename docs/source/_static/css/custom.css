@@ -11,6 +11,14 @@
     border: #FF8FAB 2px solid;
 }
 
+body {
+    font-family: Lato,proxima-nova,Helvetica Neue,Arial,sans-serif;
+    font-weight: 400;
+    color: #171717;
+    min-height: 100%;
+    background: #edf0f2
+}
+
 .wy-menu-vertical header,.wy-menu-vertical p.caption {
     color: #FB6F92;
     height: 32px;

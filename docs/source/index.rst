@@ -27,7 +27,8 @@ The primary objective was to develop multi-scale image preprocessing and analysi
    :maxdepth: 2
    :caption: 2 - Tutorials
 
-   tutorial/index
+   tutorial/task1
+   tutorial/task2
 
 .. toctree::
    :maxdepth: 2
