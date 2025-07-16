@@ -26,18 +26,18 @@ BiOSGen/
 │   ├── utils.py
 │   ├── vae.py
 │── configs/               
-│   ├── train_config.yml          
-│   ├── eval_config.yml        
+│   ├── config.yml          
 │── bin/                
-│   ├── train.py           
+│   ├── train.py  
+│   ├── test.py           
 │   ├── eval.py     
 │── scripts/   
 │   ├── batch_train.sh
 │   ├── data_installer.py
 │   ├── data_installer.sh
 │   ├── setup_env.sh
-│   ├── launch.sh    
-│── notebooks/
+│── demo/
+│── docs/
 │── assets/  
 │── requirements.txt
 │── README.md    
