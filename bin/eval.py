@@ -3,11 +3,8 @@
 
 # Basic libraries
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
-import torchvision.models as models
-from torchvision.models import VGG19_Weights
 from PIL import Image
 import numpy as np
 import os

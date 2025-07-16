@@ -3,14 +3,10 @@
 
 # Basic libraries
 import torch
-import torch.nn as n
-import torch.nn.functional as F
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from PIL import Image
-from typing import List
 import torch.optim as optim
 from tqdm import tqdm
 from omegaconf import OmegaConf
@@ -18,7 +14,6 @@ import time
 # Set random seed for reproducibility
 torch.manual_seed(0)
 import argparse
-import torch.optim as optim
 import matplotlib.gridspec as gridspec
 from torchinfo import summary
 # from torchviz import make_dot
@@ -29,10 +24,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Personalized modules
 from preprocess.dataloader import AntibodiesTree
 from preprocess.patches_utils import PatchesUtilities
-from osgen.embeddings import StyleExtractor
 from osgen.utils import Utilities
-from osgen.vae import VanillaVAE,VanillaEncoder, VanillaDecoder
-from osgen.base import BaseModel
 from osgen.nn import *
 from osgen.unet import *
 from osgen.loss import *

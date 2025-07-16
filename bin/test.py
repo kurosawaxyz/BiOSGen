@@ -20,10 +20,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Personalized modules
 from preprocess.dataloader import AntibodiesTree
 from preprocess.patches_utils import PatchesUtilities
-from osgen.embeddings import StyleExtractor
 from osgen.utils import Utilities
-from osgen.vae import VanillaVAE,VanillaEncoder, VanillaDecoder
-from osgen.base import BaseModel
 from osgen.nn import *
 from osgen.unet import *
 from osgen.loss import *
