@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # Project information
 project = 'BiOSGen'
 author = 'H. T. Duong Vu'
-release = '0.1.0'
+release = '1.0.2'
 
 # Extensions
 extensions = [
